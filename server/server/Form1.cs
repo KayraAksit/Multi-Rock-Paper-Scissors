@@ -99,10 +99,11 @@ namespace server
                     incomingMessage = incomingMessage.Substring(0, incomingMessage.IndexOf("\0"));
                     logs.AppendText(incomingMessage + "\n");
 
+                    //Sends all recieved messages back to all clients, i think
                     foreach(Socket socket in clientSockets)
                     {
-                        Byte[] bufferClient = Encoding.Default.GetBytes(incomingMessage);
-                        socket.Send(buffer);
+                        Byte[] bufferClient = Encoding.Default.GetBytes("BROADCAST: " + incomingMessage);
+                        socket.Send(bufferClient);
                     }
                 }
                 catch

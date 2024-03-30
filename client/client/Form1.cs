@@ -38,10 +38,16 @@ namespace client
                 {
                     clientSocket.Connect(IP, portNum);
                     button_connect.Enabled = false;
-                    textBox_message.Enabled = true;
+                    playerMove.Enabled = true;
                     button_send.Enabled = true;
                     connected = true;
                     logs.AppendText("Connected to the server!\n");
+
+                    //Send name to server when connected for the first time
+                    string helloMessage = "Player " + textBox_name.Text + " has joined\n";
+                    Byte[] buffer = Encoding.Default.GetBytes(helloMessage);
+                    clientSocket.Send(buffer);
+
 
                     Thread receiveThread = new Thread(Receive);
                     receiveThread.Start();
@@ -79,7 +85,7 @@ namespace client
                     {
                         logs.AppendText("The server has disconnected\n");
                         button_connect.Enabled = true;
-                        textBox_message.Enabled = false;
+                        playerMove.Enabled = false;
                         button_send.Enabled = false;
                     }
 
@@ -99,7 +105,7 @@ namespace client
 
         private void button_send_Click(object sender, EventArgs e)
         {
-            string message = "Client: " + textBox_message.Text;
+            string message = textBox_name.Text + " " + playerMove.Text;
 
             if(message != "" && message.Length <= 64)
             {
