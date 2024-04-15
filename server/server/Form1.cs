@@ -141,7 +141,7 @@ namespace server
                     }
                     catch
                     {
-                        logs.AppendText("There is a problem! Check the connection...\n");
+                        logs.AppendText("There is a problem! Check the connection.\n");
                         terminating = true;
                         textBox_message.Enabled = false;
                         button_send.Enabled = false;
@@ -152,6 +152,16 @@ namespace server
 
                 }
             }
+        }
+
+        private void logs_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox_port_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
