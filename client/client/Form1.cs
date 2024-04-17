@@ -69,7 +69,7 @@ namespace client
         {
             while(connected)
             {
-                try
+                try 
                 {
                     byte[] buffer = new byte[64];
                     int receivedByteCount = clientSocket.Receive(buffer);
