@@ -19,8 +19,8 @@ namespace server
 
         Socket serverSocket;
         List<Socket> clientSockets = new List<Socket>();
-        Queue<Socket> waitingQueue = new Queue<Socket>(); // Queue for excess connections
-        int connectedClientsCount = 0;
+        List<Socket> waitingQueue = new List<Socket>(); // Queue for excess connections
+
         bool terminating = false;
         bool listening = false;
 
@@ -62,40 +62,28 @@ namespace server
 
         private void Accept()
         {
-            while(listening)
+            while (listening)
             {
                 try
                 {
                     Socket newClient = serverSocket.Accept();
-                    if (connectedClientsCount < maxClients)
+
+                    // Check if maximum players are already connected
+                    if (clientSockets.Count < maxClients)
                     {
-                        waiting = false;
                         clientSockets.Add(newClient);
-                        connectedClientsCount++;
-                        logs.AppendText("A client is connected.\n");
+                        logs.AppendText("A player has connected.\n");
+                        NotifyClientGameStart(newClient);
 
-                        // Send response to client: "Connected"
-                        Byte[] connectedResponse = Encoding.Default.GetBytes("Connect");
-                        newClient.Send(connectedResponse);
-                        
-
-                        Thread receiveThread = new Thread(() => Receive(newClient)); // updated
+                        Thread receiveThread = new Thread(() => Receive(newClient));
                         receiveThread.Start();
                     }
                     else
                     {
-                        waitingQueue.Enqueue(newClient);
-                        logs.AppendText("A client is in the queue.\n");
-
-                        // Send response to client: "Queue"
-                        Byte[] queueResponse = Encoding.Default.GetBytes("Queue");
-                        newClient.Send(queueResponse);
-
-                        waiting = true;
-                        Thread dequeueThread = new Thread(() => WaitConnection(newClient)); // updated
-                        dequeueThread.Start();
+                        waitingQueue.Add(newClient);
+                        logs.AppendText("A player entered the waiting queue.\n");
+                        NotifyClientQueueStatus(newClient);
                     }
-
                 }
                 catch
                 {
@@ -111,68 +99,73 @@ namespace server
             }
         }
 
-        private void WaitConnection(Socket thisClient)
+        private void NotifyClientGameStart(Socket client)
         {
-            while (connectedClientsCount >= 2)
-            {
-
-            }
-
-            Thread receiveThread = new Thread(() => Receive(thisClient)); // updated
-            receiveThread.Start();
+            string gameStartMsg = "The game has started!\n";
+            byte[] gameStartBuffer = Encoding.Default.GetBytes(gameStartMsg);
+            client.Send(gameStartBuffer);
         }
 
-        private void Receive(Socket thisClient) // updated
+        private void NotifyClientQueueStatus(Socket client)
+        {
+            string queueMsg = "You are in the waiting queue...\n";
+            byte[] queueBuffer = Encoding.Default.GetBytes(queueMsg);
+            client.Send(queueBuffer);
+        }
+
+        private void Receive(Socket thisClient)
         {
             bool connected = true;
 
-            while(connected && !terminating)
+            while (connected && !terminating)
             {
                 try
                 {
-                    Byte[] buffer = new Byte[64];
+                    byte[] buffer = new byte[64];
                     int receivedByteCount = thisClient.Receive(buffer);
                     if (receivedByteCount > 0)
                     {
                         string incomingMessage = Encoding.Default.GetString(buffer).Substring(0, receivedByteCount);
                         logs.AppendText(incomingMessage + "\n");
 
-                    //Sends all recieved messages back to all clients, i think
-                    //foreach (Socket socket in clientSockets)
-                    //{
-                    //    Byte[] bufferClient = Encoding.Default.GetBytes("BROADCAST: " + incomingMessage);
-                    //    socket.Send(bufferClient);
-                    //}
+                        // Broadcast the message to all clients in the game
+                        foreach (Socket socket in clientSockets)
+                        {
+                            if (socket != thisClient)
+                            {
+                                byte[] bufferClient = Encoding.Default.GetBytes("BROADCAST: " + incomingMessage);
+                                socket.Send(bufferClient);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new SocketException(); // Assume the connection is closed if no data is received
+                    }
                 }
                 catch
                 {
-                    if(!terminating)
+                    if (!terminating)
                     {
-                        logs.AppendText("A client has disconnected\n");
-                        connectedClientsCount--;
-                        clientSockets.Remove(thisClient);
-
-                        // Try to connect a client from the waiting queue
-                        ConnectFromQueue();
+                        logs.AppendText("A player has disconnected\n");
                     }
+
                     thisClient.Close();
                     clientSockets.Remove(thisClient);
                     connected = false;
+
+                    // Check if waiting players can join
+                    if (waitingQueue.Count > 0)
+                    {
+                        Socket waitingClient = waitingQueue[0];
+                        waitingQueue.RemoveAt(0);
+                        clientSockets.Add(waitingClient);
+                        NotifyClientGameStart(waitingClient);
+
+                        Thread receiveThread = new Thread(() => Receive(waitingClient));
+                        receiveThread.Start();
+                    }
                 }
-            }
-        }
-
-        private void ConnectFromQueue()
-        {
-            if (waitingQueue.Count > 0)
-            {
-                Socket client = waitingQueue.Dequeue();
-                clientSockets.Add(client);
-                connectedClientsCount++;
-                logs.AppendText("A client from the queue is connected.\n");
-
-                Thread receiveThread = new Thread(() => Receive(client));
-                receiveThread.Start();
             }
         }
 
