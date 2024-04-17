@@ -71,13 +71,29 @@ namespace client
             {
                 try
                 {
-                    Byte[] buffer = new Byte[64];
-                    clientSocket.Receive(buffer);
+                    byte[] buffer = new byte[64];
+                    int receivedByteCount = clientSocket.Receive(buffer);
+                    if (receivedByteCount > 0)
+                    {
+                        string incomingMessage = Encoding.Default.GetString(buffer).Substring(0, receivedByteCount);
+                        logs.AppendText(incomingMessage + "\n");
 
-                    string incomingMessage = Encoding.Default.GetString(buffer);
-                    incomingMessage = incomingMessage.Substring(0, incomingMessage.IndexOf("\0"));
-
-                    logs.AppendText(incomingMessage + "\n");
+                        // When in the queue, ignore other messages
+                        if (incomingMessage.Contains("waiting queue"))
+                        {
+                            playerMove.Enabled = false;
+                            button_send.Enabled = false;
+                        }
+                        if (incomingMessage.Contains("game has started"))
+                        {
+                            playerMove.Enabled = true;
+                            button_send.Enabled = true;
+                        }
+                    }
+                    else
+                    {
+                        throw new SocketException(); // Assume the connection is closed if no data is received
+                    }
                 }
                 catch
                 {
