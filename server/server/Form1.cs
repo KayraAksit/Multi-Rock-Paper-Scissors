@@ -186,16 +186,25 @@ namespace server
                             Thread receiveThread = new Thread(() => MyReceive(waitingClient));
                             receiveThread.Start();
                         }
+                        else
+                        {
+                            foreach (Socket socket in clientSockets) //Notify players of game start
+                            {
+                                NotifyClientNotEnoughPlayers(socket);
+                            }
+                        }
                     }
                     else
                     {
                         logs.AppendText("Waiting player has disconnected\n");
                         waitingQueue.Remove(thisClient); //Remove from the list
                     }
-                    if (!terminating)
-                    {
-                        logs.AppendText("A player has disconnected\n");
-                    }
+
+
+                    //if (!terminating) NIYE TERMINATING CHECK VAR KI BURDA 
+                    //{
+                    //    logs.AppendText("A player has disconnected\n");
+                    //}
 
                     thisClient.Close();
                     connected = false;
