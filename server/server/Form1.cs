@@ -100,6 +100,8 @@ namespace server
                     {
                         waitingQueue.Add(newClient);
                         logs.AppendText("A player entered the waiting queue.\n");
+                        Thread receiveThread = new Thread(() => MyReceive(newClient));
+                        receiveThread.Start();
                         NotifyClientQueueStatus(newClient);
                     }
                 }
@@ -137,7 +139,7 @@ namespace server
             client.Send(queueBuffer);
         }
 
-        private void MyReceive(Socket thisClient) //A client sends message to the server
+        private void MyReceive(Socket thisClient)
         {
             bool connected = true;
 
@@ -169,34 +171,35 @@ namespace server
                 }
                 catch
                 {
-                    //if (clientSockets.Contains(thisClient) ) //Active Player has left
-                    //{
-                    //    logs.AppendText("Active player has disconnected\n");
-                    //}
-                    //else
-                    //{
-                    //    logs.AppendText("Waiting player has disconnected\n");
-                    //}
+                    if (clientSockets.Contains(thisClient)) //Active Player has left
+                    {
+                        logs.AppendText("Active player has disconnected\n");
+                        clientSockets.Remove(thisClient); //Remove from the list
+                                                          
+                        if (waitingQueue.Count > 0)// Check if waiting players can join
+                        {
+                            Socket waitingClient = waitingQueue[0];
+                            waitingQueue.RemoveAt(0);
+                            clientSockets.Add(waitingClient);
+                            NotifyClientGameStart(waitingClient);
+
+                            Thread receiveThread = new Thread(() => MyReceive(waitingClient));
+                            receiveThread.Start();
+                        }
+                    }
+                    else
+                    {
+                        logs.AppendText("Waiting player has disconnected\n");
+                        waitingQueue.Remove(thisClient); //Remove from the list
+                    }
                     if (!terminating)
                     {
                         logs.AppendText("A player has disconnected\n");
                     }
 
                     thisClient.Close();
-                    clientSockets.Remove(thisClient);
                     connected = false;
 
-                    // Check if waiting players can join
-                    if (waitingQueue.Count > 0)
-                    {
-                        Socket waitingClient = waitingQueue[0];
-                        waitingQueue.RemoveAt(0);
-                        clientSockets.Add(waitingClient);
-                        NotifyClientGameStart(waitingClient);
-
-                        Thread receiveThread = new Thread(() => MyReceive(waitingClient));
-                        receiveThread.Start();
-                    }
                 }
             }
         }
