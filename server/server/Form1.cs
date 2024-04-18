@@ -73,12 +73,30 @@ namespace server
                     {
                         clientSockets.Add(newClient);
                         logs.AppendText("A player has connected.\n");
-                        NotifyClientGameStart(newClient);
 
-                        Thread receiveThread = new Thread(() => Receive(newClient));
+                        if (clientSockets.Count == maxClients) //If game has enough players
+                        {
+                            foreach(Socket socket in clientSockets) //Notify players of game start
+                            {
+                                NotifyClientGameStart(socket);
+                            }
+                            foreach (Socket socket in waitingQueue) //Notify waiters of game start
+                            {
+                                NotifyClientGameStart(socket);
+                            }
+                        }
+                        else //Game does not have enough players
+                        {
+                            foreach (Socket socket in clientSockets) //Notify players of game start
+                            {
+                                NotifyClientNotEnoughPlayers(socket);
+                            }
+                        }
+
+                        Thread receiveThread = new Thread(() => MyReceive(newClient));
                         receiveThread.Start();
                     }
-                    else
+                    else //Max players joined, add new joiners to the queue
                     {
                         waitingQueue.Add(newClient);
                         logs.AppendText("A player entered the waiting queue.\n");
@@ -105,6 +123,12 @@ namespace server
             byte[] gameStartBuffer = Encoding.Default.GetBytes(gameStartMsg);
             client.Send(gameStartBuffer);
         }
+        private void NotifyClientNotEnoughPlayers(Socket client)
+        {
+            string gameStartMsg = "Not Enough Players to start the game, waiting for more players\n";
+            byte[] gameStartBuffer = Encoding.Default.GetBytes(gameStartMsg);
+            client.Send(gameStartBuffer);
+        }
 
         private void NotifyClientQueueStatus(Socket client)
         {
@@ -113,7 +137,7 @@ namespace server
             client.Send(queueBuffer);
         }
 
-        private void Receive(Socket thisClient)
+        private void MyReceive(Socket thisClient) //A client sends message to the server
         {
             bool connected = true;
 
@@ -129,14 +153,14 @@ namespace server
                         logs.AppendText(incomingMessage + "\n");
 
                         // Broadcast the message to all clients in the game
-                        foreach (Socket socket in clientSockets)
-                        {
-                            if (socket != thisClient)
-                            {
-                                byte[] bufferClient = Encoding.Default.GetBytes("BROADCAST: " + incomingMessage);
-                                socket.Send(bufferClient);
-                            }
-                        }
+                        //foreach (Socket socket in clientSockets)
+                        //{
+                        //    if (socket != thisClient)
+                        //    {
+                        //        byte[] bufferClient = Encoding.Default.GetBytes("BROADCAST: " + incomingMessage);
+                        //        socket.Send(bufferClient);
+                        //    }
+                        //}
                     }
                     else
                     {
@@ -145,6 +169,14 @@ namespace server
                 }
                 catch
                 {
+                    //if (clientSockets.Contains(thisClient) ) //Active Player has left
+                    //{
+                    //    logs.AppendText("Active player has disconnected\n");
+                    //}
+                    //else
+                    //{
+                    //    logs.AppendText("Waiting player has disconnected\n");
+                    //}
                     if (!terminating)
                     {
                         logs.AppendText("A player has disconnected\n");
@@ -162,7 +194,7 @@ namespace server
                         clientSockets.Add(waitingClient);
                         NotifyClientGameStart(waitingClient);
 
-                        Thread receiveThread = new Thread(() => Receive(waitingClient));
+                        Thread receiveThread = new Thread(() => MyReceive(waitingClient));
                         receiveThread.Start();
                     }
                 }
