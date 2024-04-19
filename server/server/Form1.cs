@@ -13,17 +13,23 @@ using System.Windows.Forms;
 
 namespace server
 {
+    public struct PlayerInfo
+    {
+        public string name;
+        public Socket socket;
+        public bool isInGame;
+    }
     public partial class Form1 : Form
     {
 
         //Initialize the dictionary to store player names
-        Dictionary<string, Socket> players = new Dictionary<string, Socket>();
+        Dictionary<string, PlayerInfo> players = new Dictionary<string, PlayerInfo>();
 
         const int maxClients = 2; //Define max number of players playing simultaneously
 
         Socket serverSocket;
-        List<Socket> clientSockets = new List<Socket>();
-        List<Socket> waitingQueue = new List<Socket>(); // Queue for excess connections
+        //List<Socket> clientSockets = new List<Socket>();
+        //List<Socket> waitingQueue = new List<Socket>(); // Queue for excess connections
 
         bool terminating = false;
         bool listening = false;
@@ -88,44 +94,45 @@ namespace server
                     }
                     else
                     {
-                        players.Add(username, newClient);
-                    }
-
-                    // Check if maximum players are already connected
-                    if (clientSockets.Count < maxClients)
-                    {
-                        clientSockets.Add(newClient);
-                        logs.AppendText("A player has connected.\n");
-
-                        if (clientSockets.Count == maxClients) //If game has enough players
+                        PlayerInfo newPlayer;
+                        newPlayer.name = username;
+                        newPlayer.socket = newClient;
+                        
+                        // Check if the game has enough players
+                        int inGameCount = players.Count(p => p.Value.isInGame == true);
+                        if(inGameCount < maxClients)
                         {
-                            foreach(Socket socket in clientSockets) //Notify players of game start
+                            NotifyPlayerEnteredGame(username);
+
+                            newPlayer.isInGame = true;
+                            logs.AppendText(username + " has connected to the game.\n");
+
+                            //Check if there are enough players to start the game now
+                            if (inGameCount +1 == maxClients)
                             {
-                                NotifyClientGameStart(socket);
+                                foreach (PlayerInfo pInf in players.Values) //Notify players of game start
+                                {
+                                    NotifyClientGameStart(pInf.socket);
+                                }
+                                NotifyClientGameStart(newClient);
                             }
-                            foreach (Socket socket in waitingQueue) //Notify waiters of game start
-                            {
-                                NotifyClientGameStart(socket);
+                            else { 
+                                foreach (PlayerInfo pInf in players.Values) //Notify players of not enough players
+                                {
+                                    NotifyClientNotEnoughPlayers(pInf.socket);
+                                }
+                                NotifyClientNotEnoughPlayers(newClient);
                             }
                         }
-                        else //Game does not have enough players
+                        else
                         {
-                            foreach (Socket socket in clientSockets) //Notify players of game start
-                            {
-                                NotifyClientNotEnoughPlayers(socket);
-                            }
+                            newPlayer.isInGame = false;
+                            logs.AppendText("A player entered the waiting queue.\n");
+                            NotifyClientQueueStatus(newClient);
                         }
-
+                        players.Add(username, newPlayer);
                         Thread receiveThread = new Thread(() => MyReceive(newClient));
                         receiveThread.Start();
-                    }
-                    else //Max players joined, add new joiners to the queue
-                    {
-                        waitingQueue.Add(newClient);
-                        logs.AppendText("A player entered the waiting queue.\n");
-                        Thread receiveThread = new Thread(() => MyReceive(newClient));
-                        receiveThread.Start();
-                        NotifyClientQueueStatus(newClient);
                     }
                 }
                 catch
@@ -147,6 +154,18 @@ namespace server
             string gameStartMsg = "The game has started!\n";
             byte[] gameStartBuffer = Encoding.Default.GetBytes(gameStartMsg);
             client.Send(gameStartBuffer);
+        }
+        private void NotifyPlayerEnteredGame(string username)
+        {
+            string plEnteredMsg = username + " has entered the game!\n";
+            byte[] plEnteredBuffer = Encoding.Default.GetBytes(plEnteredMsg);
+            foreach (PlayerInfo pInf in players.Values)
+            {
+                if (pInf.name != username && pInf.isInGame)
+                {
+                    pInf.socket.Send(plEnteredBuffer);
+                }
+            }
         }
         private void NotifyClientNotEnoughPlayers(Socket client)
         {
@@ -194,34 +213,37 @@ namespace server
                 }
                 catch
                 {
-                    if (clientSockets.Contains(thisClient)) //Active Player has left
+                    //If this client is in the game
+                    if (players.Values.FirstOrDefault(p => p.socket == thisClient).isInGame) //Active Player has left
                     {
                         logs.AppendText("Active player has disconnected\n");
-                        clientSockets.Remove(thisClient); //Remove from the list
-                                                          
-                        if (waitingQueue.Count > 0)// Check if waiting players can join
-                        {
-                            Socket waitingClient = waitingQueue[0];
-                            waitingQueue.RemoveAt(0);
-                            clientSockets.Add(waitingClient);
-                            NotifyClientGameStart(waitingClient);
+                               
+                        //Check if there are any players in the waiting queue
+                        var waitingPlayer = players.FirstOrDefault(p => p.Value.isInGame == false);
 
-                            Thread receiveThread = new Thread(() => MyReceive(waitingClient));
-                            receiveThread.Start();
+                        if (!waitingPlayer.Equals(default(KeyValuePair<string,PlayerInfo>)))// Check if waiting players can join evaluates to false if there is no waiting player
+                        {
+                            var waitingPlayerInf = waitingPlayer.Value;
+                            waitingPlayerInf.isInGame = true;
+                            players[waitingPlayer.Key] = waitingPlayerInf;
+                            NotifyClientGameStart(waitingPlayerInf.socket);
                         }
                         else
                         {
-                            foreach (Socket socket in clientSockets) //Notify players of game start
+                            foreach (PlayerInfo pInf in players.Values) //Notify players of game start
                             {
-                                NotifyClientNotEnoughPlayers(socket);
+                                NotifyClientNotEnoughPlayers(pInf.socket);
                             }
                         }
                     }
                     else
                     {
                         logs.AppendText("Waiting player has disconnected\n");
-                        waitingQueue.Remove(thisClient); //Remove from the list
                     }
+
+                    //Find the username of the player
+                    string username = players.FirstOrDefault(p => p.Value.socket == thisClient).Key;
+                    players.Remove(username); //Remove from the dictionary
 
 
                     //if (!terminating) NIYE TERMINATING CHECK VAR KI BURDA 
@@ -242,11 +264,11 @@ namespace server
             {
                 listening = false;
                 terminating = true;
-                foreach (Socket client in clientSockets)
-                    client.Close();
-
-                foreach (Socket client in waitingQueue)
-                    client.Close();
+                
+                foreach(PlayerInfo pInf in players.Values)
+                {
+                    pInf.socket.Close();
+                }
 
                 serverSocket.Close();
                 Environment.Exit(0);
@@ -260,11 +282,11 @@ namespace server
             if (message != "" && message.Length <= 64)
             {
                 Byte[] buffer = Encoding.Default.GetBytes(message);
-                foreach (Socket client in clientSockets)
+                foreach (PlayerInfo pInf in players.Values)
                 {
                     try
                     {
-                        client.Send(buffer);
+                        pInf.socket.Send(buffer);
                     }
                     catch
                     {
