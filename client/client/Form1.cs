@@ -44,8 +44,8 @@ namespace client
                     logs.AppendText("Connected to the server!\n");
 
                     //Send name to server when connected for the first time
-                    string helloMessage = "Player " + textBox_name.Text + " has joined\n";
-                    Byte[] buffer = Encoding.Default.GetBytes(helloMessage);
+                    string pName = textBox_name.Text;
+                    Byte[] buffer = Encoding.Default.GetBytes(pName);
                     clientSocket.Send(buffer);
 
 

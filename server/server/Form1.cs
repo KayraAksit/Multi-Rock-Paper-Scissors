@@ -15,6 +15,10 @@ namespace server
 {
     public partial class Form1 : Form
     {
+
+        //Initialize the dictionary to store player names
+        Dictionary<string, Socket> players = new Dictionary<string, Socket>();
+
         const int maxClients = 2; //Define max number of players playing simultaneously
 
         Socket serverSocket;
@@ -67,6 +71,25 @@ namespace server
                 try
                 {
                     Socket newClient = serverSocket.Accept();
+
+                    // Receive the username from the client
+                    byte[] buffer = new byte[64]; // assuming username will not exceed 64 bytes
+                    int received = newClient.Receive(buffer);
+                    string username = Encoding.Default.GetString(buffer, 0, received);
+
+                    // Check if the username is already taken
+                    if (players.ContainsKey(username))
+                    {
+                        // Notify the client that the username is already taken, ask for trying with a new one and disconnect the client
+                        string usernameTakenMsg = "Username is already taken. Please try with a new one.\n";
+                        byte[] usernameTakenBuffer = Encoding.Default.GetBytes(usernameTakenMsg);
+                        newClient.Send(usernameTakenBuffer);
+                        newClient.Close();
+                    }
+                    else
+                    {
+                        players.Add(username, newClient);
+                    }
 
                     // Check if maximum players are already connected
                     if (clientSockets.Count < maxClients)
