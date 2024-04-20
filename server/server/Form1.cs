@@ -13,13 +13,28 @@ using System.Windows.Forms;
 
 namespace server
 {
+    public struct PlayerInfo
+    {
+        public string name;
+        public Socket socket;
+        public bool isInGame;
+        public bool isInputTaken;
+        public string move;
+        public int inGameScore;
+
+
+    }
     public partial class Form1 : Form
     {
-        const int maxClients = 2; //Define max number of players playing simultaneously
+
+        //Initialize the dictionary to store player names
+        Dictionary<string, PlayerInfo> players = new Dictionary<string, PlayerInfo>();
+
+        const int maxClients = 4; //Define max number of players playing simultaneously
 
         Socket serverSocket;
-        List<Socket> clientSockets = new List<Socket>();
-        List<Socket> waitingQueue = new List<Socket>(); // Queue for excess connections
+        //List<Socket> clientSockets = new List<Socket>();
+        //List<Socket> waitingQueue = new List<Socket>(); // Queue for excess connections
 
         bool terminating = false;
         bool listening = false;
@@ -68,21 +83,68 @@ namespace server
                 {
                     Socket newClient = serverSocket.Accept();
 
-                    // Check if maximum players are already connected
-                    if (clientSockets.Count < maxClients)
-                    {
-                        clientSockets.Add(newClient);
-                        logs.AppendText("A player has connected.\n");
-                        NotifyClientGameStart(newClient);
+                    // Receive the username from the client
+                    byte[] buffer = new byte[64]; // assuming username will not exceed 64 bytes
+                    int received = newClient.Receive(buffer);
+                    string username = Encoding.Default.GetString(buffer, 0, received);
 
-                        Thread receiveThread = new Thread(() => Receive(newClient));
-                        receiveThread.Start();
+                    // Check if the username is already taken
+                    if (players.ContainsKey(username))
+                    {
+                        // Notify the client that the username is already taken, ask for trying with a new one and disconnect the client
+                        string usernameTakenMsg = "Username is already taken. Please try with a new one.\n";
+                        byte[] usernameTakenBuffer = Encoding.Default.GetBytes(usernameTakenMsg);
+                        newClient.Send(usernameTakenBuffer);
+                        newClient.Close();
                     }
                     else
                     {
-                        waitingQueue.Add(newClient);
-                        logs.AppendText("A player entered the waiting queue.\n");
-                        NotifyClientQueueStatus(newClient);
+                        Thread receiveThread = new Thread(() => MyReceive(newClient));
+                        receiveThread.Start();
+
+                        PlayerInfo newPlayer;
+                        newPlayer.name = username;
+                        newPlayer.socket = newClient;
+                        newPlayer.isInputTaken= false;
+                        newPlayer.move = "";
+                        newPlayer.inGameScore = 0;
+                        
+                        // Check if the game has enough players
+                        int inGameCount = players.Count(p => p.Value.isInGame == true);
+                        if(inGameCount < maxClients)
+                        {
+                            NotifyPlayerEnteredGame(username);
+
+                            newPlayer.isInGame = true;
+                            logs.AppendText(username + " has connected to the game.\n");
+
+                            //Check if there are enough players to start the game now
+                            if (inGameCount +1 == maxClients)
+                            {
+                                players.Add(username, newPlayer);
+                                foreach (PlayerInfo pInf in players.Values) //Notify players of game start
+                                {
+                                    NotifyClientGameStart(pInf.socket);
+                                }
+
+                                //Test play the game
+                                PlayTheGame();
+                            }
+                            else {
+                                players.Add(username, newPlayer);
+                                foreach (PlayerInfo pInf in players.Values) //Notify players of not enough players
+                                {
+                                    NotifyClientNotEnoughPlayers(pInf.socket);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            newPlayer.isInGame = false;
+                            logs.AppendText("A player entered the waiting queue.\n");
+                            NotifyClientQueueStatus(newClient);
+                            players.Add(username, newPlayer);
+                        }
                     }
                 }
                 catch
@@ -105,6 +167,24 @@ namespace server
             byte[] gameStartBuffer = Encoding.Default.GetBytes(gameStartMsg);
             client.Send(gameStartBuffer);
         }
+        private void NotifyPlayerEnteredGame(string username)
+        {
+            string plEnteredMsg = username + " has entered the game!\n";
+            byte[] plEnteredBuffer = Encoding.Default.GetBytes(plEnteredMsg);
+            foreach (PlayerInfo pInf in players.Values)
+            {
+                if (pInf.name != username && pInf.isInGame)
+                {
+                    pInf.socket.Send(plEnteredBuffer);
+                }
+            }
+        }
+        private void NotifyClientNotEnoughPlayers(Socket client)
+        {
+            string gameStartMsg = "Not Enough Players to start the game, waiting for more players\n";
+            byte[] gameStartBuffer = Encoding.Default.GetBytes(gameStartMsg);
+            client.Send(gameStartBuffer);
+        }
 
         private void NotifyClientQueueStatus(Socket client)
         {
@@ -113,7 +193,136 @@ namespace server
             client.Send(queueBuffer);
         }
 
-        private void Receive(Socket thisClient)
+        private void PlayTheGame()
+        {
+            string askInp = "Please enter your move you have 10 seconds";
+            byte[] askInpBuffer = Encoding.Default.GetBytes(askInp);
+            foreach (PlayerInfo pInf in players.Values)
+            {
+                if (pInf.isInGame)
+                {
+                    pInf.socket.Send(askInpBuffer);
+                }
+            }
+            int countdownTime = 60; // 10 seconds
+            while (countdownTime > 0)
+            {
+                Thread.Sleep(1000); // wait for 1 second
+                countdownTime--;
+                // Send message to clients to notify remaining time
+                string timeLeftMsg = "Time left: " + countdownTime + " seconds\n";
+                byte[] timeLeftBuffer = Encoding.Default.GetBytes(timeLeftMsg);
+                bool isAllInputTaken = true;
+                foreach (PlayerInfo pInf in players.Values)
+                {
+                    if (pInf.isInGame && !pInf.isInputTaken)
+                    {
+                        isAllInputTaken = false;
+                        pInf.socket.Send(timeLeftBuffer);
+                    }
+                }
+                if (isAllInputTaken)
+                {
+                    break;
+                }
+            }
+
+
+            //Decide the winner
+            var scores = new Dictionary<string, int>();
+            foreach(var entry in players)
+            {
+                if (entry.Value.isInGame)
+                {
+                    if(entry.Value.move == "Rock")
+                    {
+                        var plInf = entry.Value;
+                        plInf.inGameScore = players.Count(p => p.Value.move == "Scissors");
+                        scores.Add(entry.Key, plInf.inGameScore);
+                    }
+                    else if(entry.Value.move == "Paper")
+                    {
+                        var plInf = entry.Value;
+                        plInf.inGameScore = players.Count(p => p.Value.move == "Rock");
+                        scores.Add(entry.Key, plInf.inGameScore);
+                    }
+                    else if (entry.Value.move == "Scissors")
+                    {
+                        var plInf = entry.Value;
+                        plInf.inGameScore = players.Count(p => p.Value.move == "Paper");
+                        scores.Add(entry.Key, plInf.inGameScore);
+                    }
+                }
+            }
+
+            var winners = scores.Where(s => s.Value == scores.Values.Max()).Select(s => s.Key).ToList();
+
+            foreach (var entry in scores)
+            {
+                foreach(var pl in players)
+                {
+                    if (pl.Value.isInGame)
+                    {
+                        string moveMsg = pl.Key + " played " + pl.Value.move + ".\n";
+                        byte[] moveBuffer = Encoding.Default.GetBytes(moveMsg);
+                        players[entry.Key].socket.Send(moveBuffer);
+                    }
+                }
+            }
+
+            if (winners.Count == 1)
+            {
+                string winMsg = winners[0] + " has won the game!\n";
+                byte[] winBuffer = Encoding.Default.GetBytes(winMsg);
+                foreach (PlayerInfo pInf in players.Values)
+                {
+                    if (pInf.isInGame)
+                    {
+                        pInf.socket.Send(winBuffer);
+                    }
+                }
+            }
+            else
+            {
+                string winMsg = "The winners are: " + string.Join(", ", winners) + "\n" + "The next round is starting.\n";
+                byte[] winBuffer = Encoding.Default.GetBytes(winMsg);
+                foreach (PlayerInfo pInf in players.Values)
+                {
+                    if (pInf.isInGame)
+                    {
+                        pInf.socket.Send(winBuffer);
+                    }
+                }
+                var changes = new Dictionary<string, PlayerInfo>();
+                foreach(var pl in players)
+                {
+                    if (!winners.Contains(pl.Key))
+                    {
+                        var plInf = pl.Value;
+                        plInf.isInGame = false;
+                        plInf.isInputTaken = false;
+                        plInf.move = "";
+                        plInf.inGameScore = 0;
+                        changes.Add(pl.Key, plInf);
+                    }
+                }
+                foreach(var ch in changes)
+                {
+                    players[ch.Key] = ch.Value;
+                }
+                foreach(var winner in winners)
+                {
+                    var plInf = players[winner];
+                    plInf.isInputTaken = false;
+                    plInf.move = "";
+                    players[winner] = plInf;
+                }
+                PlayTheGame();
+            }
+
+        }
+
+        private void MyReceive(Socket thisClient)
         {
             bool connected = true;
 
@@ -125,18 +334,33 @@ namespace server
                     int receivedByteCount = thisClient.Receive(buffer);
                     if (receivedByteCount > 0)
                     {
+
                         string incomingMessage = Encoding.Default.GetString(buffer).Substring(0, receivedByteCount);
                         logs.AppendText(incomingMessage + "\n");
 
-                        // Broadcast the message to all clients in the game
-                        foreach (Socket socket in clientSockets)
+                        var nameMovePair = incomingMessage.Split(' ');
+
+                        //IN GAME LOGIC
+                        if (nameMovePair[1] == "Rock" || nameMovePair[1] == "Paper" || nameMovePair[1] == "Scissors")
                         {
-                            if (socket != thisClient)
-                            {
-                                byte[] bufferClient = Encoding.Default.GetBytes("BROADCAST: " + incomingMessage);
-                                socket.Send(bufferClient);
-                            }
-                        }
+                            string inputTakenMsg = "Your move " + nameMovePair[1] +" is taken.\n Waiting for other players.\n";
+                            byte[] inputTakenBuffer = Encoding.Default.GetBytes(inputTakenMsg);
+                            thisClient.Send(inputTakenBuffer);
+                            var plInf = players[nameMovePair[0]];
+                            plInf.isInputTaken = true;
+                            plInf.move = nameMovePair[1];
+                            players[nameMovePair[0]] = plInf;
+                        }   
+
+                        // Broadcast the message to all clients in the game
+                        //foreach (Socket socket in clientSockets)
+                        //{
+                        //    if (socket != thisClient)
+                        //    {
+                        //        byte[] bufferClient = Encoding.Default.GetBytes("BROADCAST: " + incomingMessage);
+                        //        socket.Send(bufferClient);
+                        //    }
+                        //}
                     }
                     else
                     {
@@ -145,26 +369,47 @@ namespace server
                 }
                 catch
                 {
-                    if (!terminating)
+                    //If this client is in the game
+                    if (players.Values.FirstOrDefault(p => p.socket == thisClient).isInGame) //Active Player has left
                     {
-                        logs.AppendText("A player has disconnected\n");
+                        logs.AppendText("Active player has disconnected\n");
+                               
+                        //Check if there are any players in the waiting queue
+                        var waitingPlayer = players.FirstOrDefault(p => p.Value.isInGame == false);
+
+                        if (!waitingPlayer.Equals(default(KeyValuePair<string,PlayerInfo>)))// Check if waiting players can join evaluates to false if there is no waiting player
+                        {
+                            var waitingPlayerInf = waitingPlayer.Value;
+                            waitingPlayerInf.isInGame = true;
+                            players[waitingPlayer.Key] = waitingPlayerInf;
+                            NotifyClientGameStart(waitingPlayerInf.socket);
+                        }
+                        else
+                        {
+                            foreach (PlayerInfo pInf in players.Values) //Notify players of game start
+                            {
+                                NotifyClientNotEnoughPlayers(pInf.socket);
+                            }
+                        }
                     }
+                    else
+                    {
+                        logs.AppendText("Waiting player has disconnected\n");
+                    }
+
+                    //Find the username of the player
+                    string username = players.FirstOrDefault(p => p.Value.socket == thisClient).Key;
+                    players.Remove(username); //Remove from the dictionary
+
+
+                    //if (!terminating) NIYE TERMINATING CHECK VAR KI BURDA 
+                    //{
+                    //    logs.AppendText("A player has disconnected\n");
+                    //}
 
                     thisClient.Close();
-                    clientSockets.Remove(thisClient);
                     connected = false;
 
-                    // Check if waiting players can join
-                    if (waitingQueue.Count > 0)
-                    {
-                        Socket waitingClient = waitingQueue[0];
-                        waitingQueue.RemoveAt(0);
-                        clientSockets.Add(waitingClient);
-                        NotifyClientGameStart(waitingClient);
-
-                        Thread receiveThread = new Thread(() => Receive(waitingClient));
-                        receiveThread.Start();
-                    }
                 }
             }
         }
@@ -175,11 +420,11 @@ namespace server
             {
                 listening = false;
                 terminating = true;
-                foreach (Socket client in clientSockets)
-                    client.Close();
-
-                foreach (Socket client in waitingQueue)
-                    client.Close();
+                
+                foreach(PlayerInfo pInf in players.Values)
+                {
+                    pInf.socket.Close();
+                }
 
                 serverSocket.Close();
                 Environment.Exit(0);
@@ -193,11 +438,11 @@ namespace server
             if (message != "" && message.Length <= 64)
             {
                 Byte[] buffer = Encoding.Default.GetBytes(message);
-                foreach (Socket client in clientSockets)
+                foreach (PlayerInfo pInf in players.Values)
                 {
                     try
                     {
-                        client.Send(buffer);
+                        pInf.socket.Send(buffer);
                     }
                     catch
                     {
