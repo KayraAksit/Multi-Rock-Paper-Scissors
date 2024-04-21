@@ -294,33 +294,31 @@ namespace server
                         pInf.socket.Send(winBuffer);
                     }
                 }
-                //var changes = new Dictionary<string, PlayerInfo>();
+                var changes = new List<PlayerInfo>();
                 foreach(var pl in players)
                 {
                     if (!winners.Contains(pl.name))
                     {
-                        players.Remove(pl);
                         var plInf = pl;
                         plInf.isInGame = false;
                         plInf.isInputTaken = false;
                         plInf.move = "";
                         plInf.inGameScore = 0;
-                        //changes.Add(pl.name, plInf);
-                        players.Add(plInf);
+                        changes.Add(plInf);;
                     }
                 }
-                //foreach(var ch in changes)
-                //{
-                //    players[ch.Key] = ch.Value;
-                //}
-                foreach(var winner in winners)
+                foreach (var ch in changes)
+                {
+                    players.RemoveAll(item => item.name == ch.name);
+                    players.Add(ch);
+                }
+                foreach (var winner in winners)
                 {
                     var plInf = players.FirstOrDefault(item => item.name == winner);
                     players.Remove(plInf);
                     plInf.isInputTaken = false;
                     plInf.move = "";
                     players.Add(plInf);
-                    //players[winner] = plInf;
                 }
                 PlayTheGame();
             }
