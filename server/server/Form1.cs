@@ -373,7 +373,11 @@ namespace server
                     if (players.Values.FirstOrDefault(p => p.socket == thisClient).isInGame) //Active Player has left
                     {
                         logs.AppendText("Active player has disconnected\n");
-                               
+                        //Find the username of the player
+                        string username = players.FirstOrDefault(p => p.Value.socket == thisClient).Key;
+                        players.Remove(username); //Remove from the dictionary
+
+
                         //Check if there are any players in the waiting queue
                         var waitingPlayer = players.FirstOrDefault(p => p.Value.isInGame == false);
 
@@ -395,11 +399,12 @@ namespace server
                     else
                     {
                         logs.AppendText("Waiting player has disconnected\n");
+                        //Find the username of the player
+                        string username = players.FirstOrDefault(p => p.Value.socket == thisClient).Key;
+                        players.Remove(username); //Remove from the dictionary
                     }
 
-                    //Find the username of the player
-                    string username = players.FirstOrDefault(p => p.Value.socket == thisClient).Key;
-                    players.Remove(username); //Remove from the dictionary
+                    
 
 
                     //if (!terminating) NIYE TERMINATING CHECK VAR KI BURDA 
