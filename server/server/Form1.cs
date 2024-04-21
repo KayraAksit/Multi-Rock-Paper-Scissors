@@ -128,7 +128,8 @@ namespace server
                                 }
 
                                 //Test play the game
-                                PlayTheGame();
+                                Thread gameThread = new Thread(new ThreadStart(PlayTheGame));
+                                gameThread.Start();
                             }
                             else {
                                 players.Add(username, newPlayer);
