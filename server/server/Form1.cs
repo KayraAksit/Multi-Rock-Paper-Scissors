@@ -28,7 +28,7 @@ namespace server
     {
 
         //Initialize the dictionary to store player names
-        Dictionary<string, PlayerInfo> players = new Dictionary<string, PlayerInfo>();
+        List<PlayerInfo> players = new List<PlayerInfo>();
 
         const int maxClients = 4; //Define max number of players playing simultaneously
 
@@ -89,7 +89,7 @@ namespace server
                     string username = Encoding.Default.GetString(buffer, 0, received);
 
                     // Check if the username is already taken
-                    if (players.ContainsKey(username))
+                    if(players.Any(item => item.name == username))
                     {
                         // Notify the client that the username is already taken, ask for trying with a new one and disconnect the client
                         string usernameTakenMsg = "Username is already taken. Please try with a new one.\n";
@@ -110,7 +110,7 @@ namespace server
                         newPlayer.inGameScore = 0;
                         
                         // Check if the game has enough players
-                        int inGameCount = players.Count(p => p.Value.isInGame == true);
+                        int inGameCount = players.Count(p => p.isInGame == true);
                         if(inGameCount < maxClients)
                         {
                             NotifyPlayerEnteredGame(username);
@@ -121,8 +121,8 @@ namespace server
                             //Check if there are enough players to start the game now
                             if (inGameCount +1 == maxClients)
                             {
-                                players.Add(username, newPlayer);
-                                foreach (PlayerInfo pInf in players.Values) //Notify players of game start
+                                players.Add(newPlayer);
+                                foreach (PlayerInfo pInf in players) //Notify players of game start
                                 {
                                     NotifyClientGameStart(pInf.socket);
                                 }
@@ -132,8 +132,8 @@ namespace server
                                 gameThread.Start();
                             }
                             else {
-                                players.Add(username, newPlayer);
-                                foreach (PlayerInfo pInf in players.Values) //Notify players of not enough players
+                                players.Add(newPlayer);
+                                foreach (PlayerInfo pInf in players) //Notify players of not enough players
                                 {
                                     NotifyClientNotEnoughPlayers(pInf.socket);
                                 }
@@ -144,7 +144,7 @@ namespace server
                             newPlayer.isInGame = false;
                             logs.AppendText("A player entered the waiting queue.\n");
                             NotifyClientQueueStatus(newClient);
-                            players.Add(username, newPlayer);
+                            players.Add(newPlayer);
                         }
                     }
                 }
@@ -172,7 +172,7 @@ namespace server
         {
             string plEnteredMsg = username + " has entered the game!\n";
             byte[] plEnteredBuffer = Encoding.Default.GetBytes(plEnteredMsg);
-            foreach (PlayerInfo pInf in players.Values)
+            foreach (PlayerInfo pInf in players)
             {
                 if (pInf.name != username && pInf.isInGame)
                 {
@@ -198,7 +198,7 @@ namespace server
         {
             string askInp = "Please enter your move you have 10 seconds";
             byte[] askInpBuffer = Encoding.Default.GetBytes(askInp);
-            foreach (PlayerInfo pInf in players.Values)
+            foreach (PlayerInfo pInf in players)
             {
                 if (pInf.isInGame)
                 {
@@ -214,7 +214,7 @@ namespace server
                 string timeLeftMsg = "Time left: " + countdownTime + " seconds\n";
                 byte[] timeLeftBuffer = Encoding.Default.GetBytes(timeLeftMsg);
                 bool isAllInputTaken = true;
-                foreach (PlayerInfo pInf in players.Values)
+                foreach (PlayerInfo pInf in players)
                 {
                     if (pInf.isInGame && !pInf.isInputTaken)
                     {
@@ -233,25 +233,25 @@ namespace server
             var scores = new Dictionary<string, int>();
             foreach(var entry in players)
             {
-                if (entry.Value.isInGame)
+                if (entry.isInGame)
                 {
-                    if(entry.Value.move == "Rock")
+                    if(entry.move == "Rock")
                     {
-                        var plInf = entry.Value;
-                        plInf.inGameScore = players.Count(p => p.Value.move == "Scissors");
-                        scores.Add(entry.Key, plInf.inGameScore);
+                        var plInf = entry;
+                        plInf.inGameScore = players.Count(p => p.move == "Scissors");
+                        scores.Add(entry.name, plInf.inGameScore);
                     }
-                    else if(entry.Value.move == "Paper")
+                    else if(entry.move == "Paper")
                     {
-                        var plInf = entry.Value;
-                        plInf.inGameScore = players.Count(p => p.Value.move == "Rock");
-                        scores.Add(entry.Key, plInf.inGameScore);
+                        var plInf = entry;
+                        plInf.inGameScore = players.Count(p => p.move == "Rock");
+                        scores.Add(entry.name, plInf.inGameScore);
                     }
-                    else if (entry.Value.move == "Scissors")
+                    else if (entry.move == "Scissors")
                     {
-                        var plInf = entry.Value;
-                        plInf.inGameScore = players.Count(p => p.Value.move == "Paper");
-                        scores.Add(entry.Key, plInf.inGameScore);
+                        var plInf = entry;
+                        plInf.inGameScore = players.Count(p => p.move == "Paper");
+                        scores.Add(entry.name, plInf.inGameScore);
                     }
                 }
             }
@@ -262,11 +262,11 @@ namespace server
             {
                 foreach(var pl in players)
                 {
-                    if (pl.Value.isInGame)
+                    if (pl.isInGame)
                     {
-                        string moveMsg = pl.Key + " played " + pl.Value.move + ".\n";
+                        string moveMsg = pl.name + " played " + pl.move + ".\n";
                         byte[] moveBuffer = Encoding.Default.GetBytes(moveMsg);
-                        players[entry.Key].socket.Send(moveBuffer);
+                        players.FirstOrDefault(item => item.name == entry.Key).socket.Send(moveBuffer);
                     }
                 }
             }
@@ -275,7 +275,7 @@ namespace server
             {
                 string winMsg = winners[0] + " has won the game!\n";
                 byte[] winBuffer = Encoding.Default.GetBytes(winMsg);
-                foreach (PlayerInfo pInf in players.Values)
+                foreach (PlayerInfo pInf in players)
                 {
                     if (pInf.isInGame)
                     {
@@ -287,36 +287,36 @@ namespace server
             {
                 string winMsg = "The winners are: " + string.Join(", ", winners) + "\n" + "The next round is starting.\n";
                 byte[] winBuffer = Encoding.Default.GetBytes(winMsg);
-                foreach (PlayerInfo pInf in players.Values)
+                foreach (PlayerInfo pInf in players)
                 {
                     if (pInf.isInGame)
                     {
                         pInf.socket.Send(winBuffer);
                     }
                 }
-                var changes = new Dictionary<string, PlayerInfo>();
+                //var changes = new Dictionary<string, PlayerInfo>();
                 foreach(var pl in players)
                 {
-                    if (!winners.Contains(pl.Key))
+                    if (!winners.Contains(pl.name))
                     {
-                        var plInf = pl.Value;
+                        var plInf = pl;
                         plInf.isInGame = false;
                         plInf.isInputTaken = false;
                         plInf.move = "";
                         plInf.inGameScore = 0;
-                        changes.Add(pl.Key, plInf);
+                        //changes.Add(pl.name, plInf);
                     }
                 }
-                foreach(var ch in changes)
-                {
-                    players[ch.Key] = ch.Value;
-                }
+                //foreach(var ch in changes)
+                //{
+                //    players[ch.Key] = ch.Value;
+                //}
                 foreach(var winner in winners)
                 {
-                    var plInf = players[winner];
+                    var plInf = players.FirstOrDefault(item => item.name == winner);
                     plInf.isInputTaken = false;
                     plInf.move = "";
-                    players[winner] = plInf;
+                    //players[winner] = plInf;
                 }
                 PlayTheGame();
             }
@@ -347,10 +347,9 @@ namespace server
                             string inputTakenMsg = "Your move " + nameMovePair[1] +" is taken.\n Waiting for other players.\n";
                             byte[] inputTakenBuffer = Encoding.Default.GetBytes(inputTakenMsg);
                             thisClient.Send(inputTakenBuffer);
-                            var plInf = players[nameMovePair[0]];
+                            var plInf = players.FirstOrDefault(item => item.name == nameMovePair[0]);
                             plInf.isInputTaken = true;
                             plInf.move = nameMovePair[1];
-                            players[nameMovePair[0]] = plInf;
                         }   
 
                         // Broadcast the message to all clients in the game
@@ -371,27 +370,27 @@ namespace server
                 catch
                 {
                     //If this client is in the game
-                    if (players.Values.FirstOrDefault(p => p.socket == thisClient).isInGame) //Active Player has left
+                    if (players.FirstOrDefault(p => p.socket == thisClient).isInGame) //Active Player has left
                     {
                         logs.AppendText("Active player has disconnected\n");
-                        //Find the username of the player
-                        string username = players.FirstOrDefault(p => p.Value.socket == thisClient).Key;
-                        players.Remove(username); //Remove from the dictionary
+
+                        //Remove from the dictionary
+                        string username = players.FirstOrDefault(p => p.socket == thisClient).name;
+                        //players.Remove(username); //Remove from the dictionary
+                        players.RemoveAll(p => p.name == username);
 
 
                         //Check if there are any players in the waiting queue
-                        var waitingPlayer = players.FirstOrDefault(p => p.Value.isInGame == false);
+                        var waitingPlayer = players.FirstOrDefault(p => p.isInGame == false);
 
-                        if (!waitingPlayer.Equals(default(KeyValuePair<string,PlayerInfo>)))// Check if waiting players can join evaluates to false if there is no waiting player
+                        if (!waitingPlayer.Equals(default(PlayerInfo)))// Check if waiting players can join evaluates to false if there is no waiting player
                         {
-                            var waitingPlayerInf = waitingPlayer.Value;
-                            waitingPlayerInf.isInGame = true;
-                            players[waitingPlayer.Key] = waitingPlayerInf;
-                            NotifyClientGameStart(waitingPlayerInf.socket);
+                            waitingPlayer.isInGame = true;
+                            NotifyClientGameStart(waitingPlayer.socket);
                         }
                         else
                         {
-                            foreach (PlayerInfo pInf in players.Values) //Notify players of game start
+                            foreach (PlayerInfo pInf in players) //Notify players of game start
                             {
                                 NotifyClientNotEnoughPlayers(pInf.socket);
                             }
@@ -400,9 +399,8 @@ namespace server
                     else
                     {
                         logs.AppendText("Waiting player has disconnected\n");
-                        //Find the username of the player
-                        string username = players.FirstOrDefault(p => p.Value.socket == thisClient).Key;
-                        players.Remove(username); //Remove from the dictionary
+                        //Remove from the dictionary
+                        players.RemoveAll(p => p.socket == thisClient);
                     }
 
                     
@@ -427,7 +425,7 @@ namespace server
                 listening = false;
                 terminating = true;
                 
-                foreach(PlayerInfo pInf in players.Values)
+                foreach(PlayerInfo pInf in players)
                 {
                     pInf.socket.Close();
                 }
@@ -444,7 +442,7 @@ namespace server
             if (message != "" && message.Length <= 64)
             {
                 Byte[] buffer = Encoding.Default.GetBytes(message);
-                foreach (PlayerInfo pInf in players.Values)
+                foreach (PlayerInfo pInf in players)
                 {
                     try
                     {
