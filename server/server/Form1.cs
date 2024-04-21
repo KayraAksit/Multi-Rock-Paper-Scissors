@@ -299,12 +299,14 @@ namespace server
                 {
                     if (!winners.Contains(pl.name))
                     {
+                        players.Remove(pl);
                         var plInf = pl;
                         plInf.isInGame = false;
                         plInf.isInputTaken = false;
                         plInf.move = "";
                         plInf.inGameScore = 0;
                         //changes.Add(pl.name, plInf);
+                        players.Add(plInf);
                     }
                 }
                 //foreach(var ch in changes)
@@ -314,8 +316,10 @@ namespace server
                 foreach(var winner in winners)
                 {
                     var plInf = players.FirstOrDefault(item => item.name == winner);
+                    players.Remove(plInf);
                     plInf.isInputTaken = false;
                     plInf.move = "";
+                    players.Add(plInf);
                     //players[winner] = plInf;
                 }
                 PlayTheGame();
@@ -348,8 +352,11 @@ namespace server
                             byte[] inputTakenBuffer = Encoding.Default.GetBytes(inputTakenMsg);
                             thisClient.Send(inputTakenBuffer);
                             var plInf = players.FirstOrDefault(item => item.name == nameMovePair[0]);
+                            players.Remove(plInf);
                             plInf.isInputTaken = true;
                             plInf.move = nameMovePair[1];
+                            players.Add(plInf);
+                            
                         }   
 
                         // Broadcast the message to all clients in the game
@@ -385,7 +392,9 @@ namespace server
 
                         if (!waitingPlayer.Equals(default(PlayerInfo)))// Check if waiting players can join evaluates to false if there is no waiting player
                         {
+                            players.Remove(waitingPlayer); 
                             waitingPlayer.isInGame = true;
+                            players.Add(waitingPlayer);
                             NotifyClientGameStart(waitingPlayer.socket);
                         }
                         else
