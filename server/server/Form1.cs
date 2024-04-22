@@ -22,11 +22,19 @@ namespace server
         public string move;
         public int inGameScore;
 
-
+        public PlayerInfo(string _name, Socket _socket)
+        {
+            name = _name;
+            socket = _socket;
+            isInGame = false;
+            isInputTaken = false;
+            move = "";
+            inGameScore = 0;
+        }
     }
+
     public partial class Form1 : Form
     {
-
         //Initialize the dictionary to store player names
         Dictionary<string, PlayerInfo> players = new Dictionary<string, PlayerInfo>();
 
@@ -102,12 +110,7 @@ namespace server
                         Thread receiveThread = new Thread(() => MyReceive(newClient));
                         receiveThread.Start();
 
-                        PlayerInfo newPlayer;
-                        newPlayer.name = username;
-                        newPlayer.socket = newClient;
-                        newPlayer.isInputTaken= false;
-                        newPlayer.move = "";
-                        newPlayer.inGameScore = 0;
+                        PlayerInfo newPlayer = new PlayerInfo(username, newClient);
                         
                         // Check if the game has enough players
                         int inGameCount = players.Count(p => p.Value.isInGame == true);
@@ -141,7 +144,6 @@ namespace server
                         }
                         else
                         {
-                            newPlayer.isInGame = false;
                             logs.AppendText("A player entered the waiting queue.\n");
                             NotifyClientQueueStatus(newClient);
                             players.Add(username, newPlayer);
@@ -227,7 +229,6 @@ namespace server
                     break;
                 }
             }
-
 
             //Decide the winner
             var scores = new Dictionary<string, int>();
@@ -352,16 +353,6 @@ namespace server
                             plInf.move = nameMovePair[1];
                             players[nameMovePair[0]] = plInf;
                         }   
-
-                        // Broadcast the message to all clients in the game
-                        //foreach (Socket socket in clientSockets)
-                        //{
-                        //    if (socket != thisClient)
-                        //    {
-                        //        byte[] bufferClient = Encoding.Default.GetBytes("BROADCAST: " + incomingMessage);
-                        //        socket.Send(bufferClient);
-                        //    }
-                        //}
                     }
                     else
                     {
@@ -404,14 +395,6 @@ namespace server
                         string username = players.FirstOrDefault(p => p.Value.socket == thisClient).Key;
                         players.Remove(username); //Remove from the dictionary
                     }
-
-                    
-
-
-                    //if (!terminating) NIYE TERMINATING CHECK VAR KI BURDA 
-                    //{
-                    //    logs.AppendText("A player has disconnected\n");
-                    //}
 
                     thisClient.Close();
                     connected = false;
