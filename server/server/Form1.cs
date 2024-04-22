@@ -29,7 +29,7 @@ namespace server
         //Initialize the dictionary to store player names
         List<PlayerInfo> players = new List<PlayerInfo>();
 
-        const int maxClients = 4; //Define max number of players playing simultaneously
+        const int maxClients = 2; //Define max number of players playing simultaneously
 
         Socket serverSocket;
         //List<Socket> clientSockets = new List<Socket>();
@@ -163,7 +163,7 @@ namespace server
 
         private void NotifyClientGameStart(Socket client)
         {
-            string gameStartMsg = "The game has started!\n";
+            string gameStartMsg = "The game will start in shortly!\n";
             byte[] gameStartBuffer = Encoding.Default.GetBytes(gameStartMsg);
             client.Send(gameStartBuffer);
         }
@@ -193,8 +193,51 @@ namespace server
             client.Send(queueBuffer);
         }
 
+        private bool StartCountDown()
+        {
+            int countdownTime = 10; // 10 seconds
+            while (countdownTime > 0)
+            {
+                Thread.Sleep(1000); // wait for 1 second
+                countdownTime--;
+                // Check current inGame count
+                int inGameCount = players.Count(p => p.isInGame == true);
+
+                if (inGameCount != maxClients)
+                {
+                    string notEnoughPlayersMsg = "Player left. Waiting for more players.\n";
+                    byte[] notEnoughPlayersBuffer = Encoding.Default.GetBytes(notEnoughPlayersMsg);
+                    foreach (PlayerInfo pInf in players)
+                    {
+                        if (pInf.isInGame)
+                        {
+                            pInf.socket.Send(notEnoughPlayersBuffer);
+                        }
+                    }
+                    return false;
+                }
+                else
+                {
+                    string timeLeftMsg = "Game starting in " + countdownTime + " seconds!\n";
+                    byte[] timeLeftBuffer = Encoding.Default.GetBytes(timeLeftMsg);
+                    foreach (PlayerInfo pInf in players)
+                    {
+                        if (pInf.isInGame)
+                        {
+                            pInf.socket.Send(timeLeftBuffer);
+                        }
+                    }
+                }
+            }
+            return true;
+        }
         private void PlayTheGame()
         {
+            if (!StartCountDown())
+            {
+                return;
+            }
+
             string askInp = "Please enter your move you have 10 seconds";
             byte[] askInpBuffer = Encoding.Default.GetBytes(askInp);
             foreach (PlayerInfo pInf in players)
@@ -213,6 +256,24 @@ namespace server
                 string timeLeftMsg = "Time left: " + countdownTime + " seconds\n";
                 byte[] timeLeftBuffer = Encoding.Default.GetBytes(timeLeftMsg);
                 bool isAllInputTaken = true;
+
+                int inGameCount = players.Count(p => p.isInGame == true);
+
+                //Everybody disconnected except one player hükmen galip
+                if(inGameCount == 1)
+                {
+                    var winner = players.FirstOrDefault(p => p.isInGame == true);
+                    string winMsg = winner.name + " has won the game by default!\n";
+                    byte[] winBuffer = Encoding.Default.GetBytes(winMsg);
+
+                    //Announce the winner to all players
+                    foreach (PlayerInfo pInf in players)
+                    {
+                        pInf.socket.Send(winBuffer);
+                    }
+                    return;
+                }
+                
                 foreach (PlayerInfo pInf in players)
                 {
                     if (pInf.isInGame && !pInf.isInputTaken)
@@ -388,10 +449,11 @@ namespace server
                         }
                         else
                         {
-                            foreach (PlayerInfo pInf in players) //Notify players of game start
-                            {
-                                NotifyClientNotEnoughPlayers(pInf.socket);
-                            }
+                            //LOGIC MOVED INTO THE START COUNTDOWN
+                            //foreach (PlayerInfo pInf in players) //Notify players of game start
+                            //{
+                            //    NotifyClientNotEnoughPlayers(pInf.socket);
+                            //}
                         }
                     }
                     else

@@ -84,7 +84,7 @@ namespace client
                             playerMove.Enabled = false;
                             button_send.Enabled = false;
                         }
-                        if (incomingMessage.Contains("game has started"))
+                        if (incomingMessage.Contains("your move you have"))
                         {
                             playerMove.Enabled = true;
                             button_send.Enabled = true;
