@@ -13,7 +13,7 @@ using System.Windows.Forms;
 
 namespace server
 {
-    public struct PlayerInfo
+    public class PlayerInfo
     {
         public string name;
         public Socket socket;
@@ -21,7 +21,6 @@ namespace server
         public bool isInputTaken;
         public string move;
         public int inGameScore;
-
 
     }
     public partial class Form1 : Form
@@ -102,7 +101,7 @@ namespace server
                         Thread receiveThread = new Thread(() => MyReceive(newClient));
                         receiveThread.Start();
 
-                        PlayerInfo newPlayer;
+                        PlayerInfo newPlayer = new PlayerInfo();
                         newPlayer.name = username;
                         newPlayer.socket = newClient;
                         newPlayer.isInputTaken= false;
@@ -294,7 +293,6 @@ namespace server
                         pInf.socket.Send(winBuffer);
                     }
                 }
-                var changes = new List<PlayerInfo>();
                 foreach(var pl in players)
                 {
                     if (!winners.Contains(pl.name))
@@ -304,21 +302,14 @@ namespace server
                         plInf.isInputTaken = false;
                         plInf.move = "";
                         plInf.inGameScore = 0;
-                        changes.Add(plInf);;
+                        //changes.Add(plInf);;
                     }
-                }
-                foreach (var ch in changes)
-                {
-                    players.RemoveAll(item => item.name == ch.name);
-                    players.Add(ch);
                 }
                 foreach (var winner in winners)
                 {
                     var plInf = players.FirstOrDefault(item => item.name == winner);
-                    players.Remove(plInf);
                     plInf.isInputTaken = false;
                     plInf.move = "";
-                    players.Add(plInf);
                 }
                 PlayTheGame();
             }
@@ -350,10 +341,10 @@ namespace server
                             byte[] inputTakenBuffer = Encoding.Default.GetBytes(inputTakenMsg);
                             thisClient.Send(inputTakenBuffer);
                             var plInf = players.FirstOrDefault(item => item.name == nameMovePair[0]);
-                            players.Remove(plInf);
+                            //players.Remove(plInf);
                             plInf.isInputTaken = true;
                             plInf.move = nameMovePair[1];
-                            players.Add(plInf);
+                            //players.Add(plInf);
                             
                         }   
 
@@ -388,11 +379,11 @@ namespace server
                         //Check if there are any players in the waiting queue
                         var waitingPlayer = players.FirstOrDefault(p => p.isInGame == false);
 
-                        if (!waitingPlayer.Equals(default(PlayerInfo)))// Check if waiting players can join evaluates to false if there is no waiting player
+                        if (waitingPlayer != null)// Check if waiting players can join evaluates to false if there is no waiting player
                         {
-                            players.Remove(waitingPlayer); 
+                            //players.Remove(waitingPlayer); 
                             waitingPlayer.isInGame = true;
-                            players.Add(waitingPlayer);
+                            //players.Add(waitingPlayer);
                             NotifyClientGameStart(waitingPlayer.socket);
                         }
                         else
@@ -410,14 +401,7 @@ namespace server
                         players.RemoveAll(p => p.socket == thisClient);
                     }
 
-                    
-
-
-                    //if (!terminating) NIYE TERMINATING CHECK VAR KI BURDA 
-                    //{
-                    //    logs.AppendText("A player has disconnected\n");
-                    //}
-
+                   
                     thisClient.Close();
                     connected = false;
 
