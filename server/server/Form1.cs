@@ -434,7 +434,7 @@ namespace server
             Dictionary<string, int> winCounts = new Dictionary<string, int>();
             try
             {
-                string[] lines = File.ReadAllLines("C:\\Users\\ereng\\source\\repos\\Multi-Rock-Paper-Scissors\\server\\server\\leaderboard.txt");
+                string[] lines = File.ReadAllLines("leaderboard.txt");
                 foreach (string line in lines)
                 {
                     string[] parts = line.Split(',');
@@ -466,7 +466,7 @@ namespace server
             }
             try
             {
-                File.WriteAllLines("C:\\Users\\ereng\\source\\repos\\Multi-Rock-Paper-Scissors\\server\\server\\leaderboard.txt", lines);
+                File.WriteAllLines("leaderboard.txt", lines);
             }
             catch (Exception e)
             {
