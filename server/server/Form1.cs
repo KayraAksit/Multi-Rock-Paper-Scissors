@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -13,33 +14,14 @@ using System.Windows.Forms;
 
 namespace server
 {
-    public class PlayerInfo
-    {
-        public string name;
-        public Socket socket;
-        public bool isInGame;
-        public bool isInputTaken;
-        public string move;
-        public int inGameScore;
-
-        public PlayerInfo(string _name, Socket _socket)
-        {
-            name = _name;
-            socket = _socket;
-            isInGame = false;
-            isInputTaken = false;
-            move = "";
-            inGameScore = 0;
-        }
-
-    }
+    
     public partial class Form1 : Form
     {
-
+        #region VARIABLES
         //Initialize the dictionary to store player names
         List<PlayerInfo> players = new List<PlayerInfo>();
 
-        const int maxClients = 3; //Define max number of players playing simultaneously
+        const int maxClients = 4; //Define max number of players playing simultaneously
         int activeMaxClients = maxClients; //Define max number of players playing simultaneously in the current round
         bool isSecondRound = false;
 
@@ -49,7 +31,9 @@ namespace server
 
         bool terminating = false;
         bool listening = false;
+        #endregion
 
+        #region INIT, LISTEN, ACCEPT
         public Form1()
         {
             Control.CheckForIllegalCrossThreadCalls = false;
@@ -167,13 +151,16 @@ namespace server
                 }
             }
         }
+        #endregion
 
+        #region NOTIFICATIONS
         private void NotifyClientGameStart(Socket client)
         {
             string gameStartMsg = "The game will start in shortly!\n";
             byte[] gameStartBuffer = Encoding.Default.GetBytes(gameStartMsg);
             client.Send(gameStartBuffer);
         }
+
         private void NotifyPlayerEnteredGame(string username)
         {
             string plEnteredMsg = username + " has entered the game!\n";
@@ -186,6 +173,7 @@ namespace server
                 }
             }
         }
+
         private void NotifyClientNotEnoughPlayers(Socket client)
         {
             string gameStartMsg = "Not Enough Players to start the game, waiting for more players\n";
@@ -199,7 +187,9 @@ namespace server
             byte[] queueBuffer = Encoding.Default.GetBytes(queueMsg);
             client.Send(queueBuffer);
         }
+        #endregion
 
+        #region GAMEPLAY
         //Second boolean argumant is for not taking anyone from the waiting queue when the second round starts
         private bool StartCountDown(int playerNum, bool isSecondRound)
         {
@@ -256,6 +246,7 @@ namespace server
             }
             return true;
         }
+
         private void PlayTheGame() //isSecondRound will be passed into the StartCountDown to prevent taking players from the waiting queue
         {
 
@@ -426,7 +417,79 @@ namespace server
             }
 
         }
+        #endregion
 
+        #region LEADERBOARD FUNCTIONS
+        //// Helper method to read win counts from file
+        //private Dictionary<string, int> ReadWinCountsFromFile()
+        //{
+        //    Dictionary<string, int> winCounts = new Dictionary<string, int>();
+        //    try
+        //    {
+        //        string[] lines = File.ReadAllLines("winCounts.txt");
+        //        foreach (string line in lines)
+        //        {
+        //            string[] parts = line.Split(',');
+        //            if (parts.Length == 2)
+        //            {
+        //                string username = parts[0];
+        //                int wins;
+        //                if (int.TryParse(parts[1], out wins))
+        //                {
+        //                    winCounts[username] = wins;
+        //                }
+        //            }
+        //        }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        logs.AppendText("Could not read win counts file: " + e.Message);
+        //    }
+        //    return winCounts;
+        //}
+
+        //// Helper method to write win counts to file
+        //private void WriteWinCountsToFile(Dictionary<string, int> winCounts)
+        //{
+        //    List<string> lines = new List<string>();
+        //    foreach (var pair in winCounts)
+        //    {
+        //        lines.Add(pair.Key + "," + pair.Value.ToString());
+        //    }
+        //    try
+        //    {
+        //        File.WriteAllLines("winCounts.txt", lines);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        logs.AppendText("Could not write win counts file: " + e.Message);
+        //    }
+        //}
+
+        //// Call this method after determining the winner to update their win count
+        //private void UpdateWinCount(string winnerName)
+        //{
+        //    var winCounts = ReadWinCountsFromFile();
+        //    if (winCounts.ContainsKey(winnerName))
+        //    {
+        //        winCounts[winnerName]++;
+        //    }
+        //    else
+        //    {
+        //        winCounts[winnerName] = 1;
+        //    }
+        //    WriteWinCountsToFile(winCounts);
+        //    UpdateLeaderboard(winCounts);
+        //}
+
+        //private void leaderboard_TextChanged(object sender, EventArgs e)
+        //{
+
+        //}
+        #endregion
+
+        #region MAIN FLOW
+        // Main thread for activating clients
         private void MyReceive(Socket thisClient)
         {
             bool connected = true;
@@ -538,8 +601,11 @@ namespace server
                 Environment.Exit(0);
             }
         }
+        #endregion
 
-    private void button_send_Click(object sender, EventArgs e)
+        #region WHATEVER
+        // If server sends message
+        private void button_send_Click(object sender, EventArgs e)
         {
             string message = "Server: " + textBox_message.Text;
             logs.AppendText(message + "\n");
@@ -576,5 +642,29 @@ namespace server
         {
 
         }
+        #endregion
     }
+}
+
+public class PlayerInfo
+{
+    public string name;
+    public Socket socket;
+    public bool isInGame;
+    public bool isInputTaken;
+    public string move;
+    public int inGameScore;
+    //public int winCount;
+
+    public PlayerInfo(string _name, Socket _socket)
+    {
+        name = _name;
+        socket = _socket;
+        isInGame = false;
+        isInputTaken = false;
+        move = "";
+        inGameScore = 0;
+        //winCount = 0;
+    }
+
 }
