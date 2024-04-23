@@ -20,18 +20,16 @@ namespace server
     public partial class Form1 : Form
     {
         #region VARIABLES
-
         //Initialize the dictionary to store player names
         List<PlayerInfo> players = new List<PlayerInfo>();
 
         const int maxClients = 4; //Define max number of players playing simultaneously
         int activeMaxClients = maxClients; //Define max number of players playing simultaneously in the current round
-        bool isSecondRound = false;
 
         Socket serverSocket;
-        //List<Socket> clientSockets = new List<Socket>();
-        //List<Socket> waitingQueue = new List<Socket>(); // Queue for excess connections
+        Dictionary<string, int> winCounts;
 
+        bool isSecondRound = false;
         bool terminating = false;
         bool listening = false;
         #endregion
@@ -44,6 +42,8 @@ namespace server
             InitializeComponent();
 
             serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            winCounts = ReadWinCountsFromFile();
+            UpdateLeaderboard(winCounts);
         }
 
         private void button_listen_Click(object sender, EventArgs e)
