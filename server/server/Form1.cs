@@ -99,7 +99,8 @@ namespace server
                         Thread receiveThread = new Thread(() => MyReceive(newClient));
                         receiveThread.Start();
 
-                        PlayerInfo newPlayer = new PlayerInfo(username, newClient);
+                        int winCount = ReadWinCountsFromFile().TryGetValue(username, out winCount) ? winCount : 0;
+                        PlayerInfo newPlayer = new PlayerInfo(username, newClient, winCount);
 
                         // Check if the game has enough players
                         int inGameCount = players.Count(p => p.isInGame == true);
@@ -165,6 +166,9 @@ namespace server
 
         private void NotifyPlayerEnteredGame(string username)
         {
+            var winCounts = ReadWinCountsFromFile();
+            int winCount = winCounts.ContainsKey(username) ? winCounts[username] : 0;
+
             string plEnteredMsg = username + " has entered the game!\n";
             byte[] plEnteredBuffer = Encoding.Default.GetBytes(plEnteredMsg);
             foreach (PlayerInfo pInf in players)
@@ -285,6 +289,7 @@ namespace server
                 {
                     var winner = players.FirstOrDefault(p => p.isInGame == true);
                     string winMsg = winner.name + " has won the game by default!\n";
+                    UpdateWinCount(winner.name);
                     byte[] winBuffer = Encoding.Default.GetBytes(winMsg);
 
                     //Announce the winner to all players
@@ -374,6 +379,7 @@ namespace server
                 isSecondRound = false;
 
                 string winMsg = winners[0] + " has won the game!\n";
+                UpdateWinCount(winners[0]);
                 byte[] winBuffer = Encoding.Default.GetBytes(winMsg);
                 foreach (PlayerInfo pInf in players)
                 {
@@ -422,72 +428,85 @@ namespace server
         #endregion
 
         #region LEADERBOARD FUNCTIONS
-        //// Helper method to read win counts from file
-        //private Dictionary<string, int> ReadWinCountsFromFile()
-        //{
-        //    Dictionary<string, int> winCounts = new Dictionary<string, int>();
-        //    try
-        //    {
-        //        string[] lines = File.ReadAllLines("winCounts.txt");
-        //        foreach (string line in lines)
-        //        {
-        //            string[] parts = line.Split(',');
-        //            if (parts.Length == 2)
-        //            {
-        //                string username = parts[0];
-        //                int wins;
-        //                if (int.TryParse(parts[1], out wins))
-        //                {
-        //                    winCounts[username] = wins;
-        //                }
-        //            }
-        //        }
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        logs.AppendText("Could not read win counts file: " + e.Message);
-        //    }
-        //    return winCounts;
-        //}
+        // Helper method to read win counts from file
+        private Dictionary<string, int> ReadWinCountsFromFile()
+        {
+            Dictionary<string, int> winCounts = new Dictionary<string, int>();
+            try
+            {
+                string[] lines = File.ReadAllLines("C:\\Users\\ereng\\source\\repos\\Multi-Rock-Paper-Scissors\\server\\server\\leaderboard.txt");
+                foreach (string line in lines)
+                {
+                    string[] parts = line.Split(',');
+                    if (parts.Length == 2)
+                    {
+                        string username = parts[0];
+                        int wins;
+                        if (int.TryParse(parts[1], out wins))
+                        {
+                            winCounts[username] = wins;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                logs.AppendText("Could not read win counts file: " + e.Message);
+            }
+            return winCounts;
+        }
 
-        //// Helper method to write win counts to file
-        //private void WriteWinCountsToFile(Dictionary<string, int> winCounts)
-        //{
-        //    List<string> lines = new List<string>();
-        //    foreach (var pair in winCounts)
-        //    {
-        //        lines.Add(pair.Key + "," + pair.Value.ToString());
-        //    }
-        //    try
-        //    {
-        //        File.WriteAllLines("winCounts.txt", lines);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        logs.AppendText("Could not write win counts file: " + e.Message);
-        //    }
-        //}
+        // Helper method to write win counts to file
+        private void WriteWinCountsToFile(Dictionary<string, int> winCounts)
+        {
+            List<string> lines = new List<string>();
+            foreach (var pair in winCounts)
+            {
+                lines.Add(pair.Key + "," + pair.Value.ToString());
+            }
+            try
+            {
+                File.WriteAllLines("C:\\Users\\ereng\\source\\repos\\Multi-Rock-Paper-Scissors\\server\\server\\leaderboard.txt", lines);
+            }
+            catch (Exception e)
+            {
+                logs.AppendText("Could not write win counts file: " + e.Message);
+            }
+        }
 
-        //// Call this method after determining the winner to update their win count
-        //private void UpdateWinCount(string winnerName)
-        //{
-        //    var winCounts = ReadWinCountsFromFile();
-        //    if (winCounts.ContainsKey(winnerName))
-        //    {
-        //        winCounts[winnerName]++;
-        //    }
-        //    else
-        //    {
-        //        winCounts[winnerName] = 1;
-        //    }
-        //    WriteWinCountsToFile(winCounts);
-        //    UpdateLeaderboard(winCounts);
-        //}
+        // Call this method after determining the winner to update their win count
+        private void UpdateWinCount(string winnerName)
+        {
+            var winCounts = ReadWinCountsFromFile();
+            if (winCounts.ContainsKey(winnerName))
+            {
+                winCounts[winnerName]++;
+            }
+            else
+            {
+                winCounts[winnerName] = 1;
+            }
+            WriteWinCountsToFile(winCounts);
+            UpdateLeaderboard(winCounts);
+        }
 
-        //private void leaderboard_TextChanged(object sender, EventArgs e)
-        //{
+        // Method to update the leaderboard shown in the server GUI
+        private void UpdateLeaderboard(Dictionary<string, int> winCounts)
+        {
+            // This method should update the control in your GUI that displays the leaderboard,
+            // such as a ListBox, DataGridView, or other suitable control.
+            // For example, if you have a ListBox named leaderboard:
+            leaderboard.Items.Clear();
+            foreach (var winCount in winCounts.OrderByDescending(pair => pair.Value))
+            {
+                leaderboard.Items.Add(winCount.Key + ": " + winCount.Value);
+            }
+        }
 
-        //}
+        private void leaderboard_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
         #endregion
 
         #region MAIN FLOW
@@ -645,6 +664,7 @@ namespace server
 
         }
         #endregion
+
     }
 }
 
@@ -656,9 +676,9 @@ public class PlayerInfo
     public bool isInputTaken;
     public string move;
     public int inGameScore;
-    //public int winCount;
+    public int winCount;
 
-    public PlayerInfo(string _name, Socket _socket)
+    public PlayerInfo(string _name, Socket _socket, int _winCount)
     {
         name = _name;
         socket = _socket;
@@ -666,7 +686,7 @@ public class PlayerInfo
         isInputTaken = false;
         move = "";
         inGameScore = 0;
-        //winCount = 0;
+        winCount = _winCount;
     }
 
 }

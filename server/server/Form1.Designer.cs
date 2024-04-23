@@ -35,7 +35,7 @@
             this.Label2 = new System.Windows.Forms.Label();
             this.textBox_message = new System.Windows.Forms.TextBox();
             this.button_send = new System.Windows.Forms.Button();
-            this.leaderboard = new System.Windows.Forms.RichTextBox();
+            this.leaderboard = new System.Windows.Forms.ListBox();
             this.SuspendLayout();
             // 
             // textBox_port
@@ -112,14 +112,12 @@
             // 
             // leaderboard
             // 
-            this.leaderboard.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
-            this.leaderboard.Location = new System.Drawing.Point(396, 70);
-            this.leaderboard.Margin = new System.Windows.Forms.Padding(2);
+            this.leaderboard.FormattingEnabled = true;
+            this.leaderboard.Location = new System.Drawing.Point(399, 70);
             this.leaderboard.Name = "leaderboard";
-            this.leaderboard.Size = new System.Drawing.Size(225, 264);
+            this.leaderboard.Size = new System.Drawing.Size(221, 264);
             this.leaderboard.TabIndex = 7;
-            this.leaderboard.Text = "## LEADERBOARD ##";
-            this.leaderboard.TextChanged += new System.EventHandler(this.leaderboard_TextChanged);
+            this.leaderboard.SelectedIndexChanged += new System.EventHandler(this.leaderboard_SelectedIndexChanged);
             // 
             // Form1
             // 
@@ -151,7 +149,7 @@
         private System.Windows.Forms.Label Label2;
         private System.Windows.Forms.TextBox textBox_message;
         private System.Windows.Forms.Button button_send;
-        private System.Windows.Forms.RichTextBox leaderboard;
+        private System.Windows.Forms.ListBox leaderboard;
     }
 }
 
