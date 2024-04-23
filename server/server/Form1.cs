@@ -29,7 +29,7 @@ namespace server
         //Initialize the dictionary to store player names
         List<PlayerInfo> players = new List<PlayerInfo>();
 
-        const int maxClients = 2; //Define max number of players playing simultaneously
+        const int maxClients = 3; //Define max number of players playing simultaneously
 
         Socket serverSocket;
         //List<Socket> clientSockets = new List<Socket>();
@@ -126,9 +126,11 @@ namespace server
                                     NotifyClientGameStart(pInf.socket);
                                 }
 
+                                var argTuple = (maxClients, false);
                                 //Test play the game
-                                Thread gameThread = new Thread(new ThreadStart(PlayTheGame));
-                                gameThread.Start();
+                                Thread gameThread = new Thread(new ParameterizedThreadStart(PlayTheGame));
+                                gameThread.Start(argTuple);
+
                             }
                             else {
                                 players.Add(newPlayer);
@@ -193,7 +195,8 @@ namespace server
             client.Send(queueBuffer);
         }
 
-        private bool StartCountDown()
+        //Second boolean argumant is for not taking anyone from the waiting queue when the second round starts
+        private bool StartCountDown(int playerNum, bool isSecondRound)
         {
             int countdownTime = 10; // 10 seconds
             while (countdownTime > 0)
@@ -203,7 +206,7 @@ namespace server
                 // Check current inGame count
                 int inGameCount = players.Count(p => p.isInGame == true);
 
-                if (inGameCount != maxClients)
+                if (inGameCount != playerNum && !isSecondRound)
                 {
                     string notEnoughPlayersMsg = "Player left. Waiting for more players.\n";
                     byte[] notEnoughPlayersBuffer = Encoding.Default.GetBytes(notEnoughPlayersMsg);
@@ -231,9 +234,13 @@ namespace server
             }
             return true;
         }
-        private void PlayTheGame()
+        private void PlayTheGame(object playerNum_isSecondRound) //isSecondRound will be passed into the StartCountDown to prevent taking players from the waiting queue
         {
-            if (!StartCountDown())
+            var argTuple= ((int,bool))playerNum_isSecondRound;
+            int pNum = argTuple.Item1;
+            bool isSecondRound = argTuple.Item2;
+
+            if (!StartCountDown(pNum, isSecondRound))
             {
                 return;
             }
@@ -247,6 +254,8 @@ namespace server
                     pInf.socket.Send(askInpBuffer);
                 }
             }
+
+            bool isAllInputTaken = true;
             int countdownTime = 60; // 10 seconds
             while (countdownTime > 0)
             {
@@ -255,7 +264,6 @@ namespace server
                 // Send message to clients to notify remaining time
                 string timeLeftMsg = "Time left: " + countdownTime + " seconds\n";
                 byte[] timeLeftBuffer = Encoding.Default.GetBytes(timeLeftMsg);
-                bool isAllInputTaken = true;
 
                 int inGameCount = players.Count(p => p.isInGame == true);
 
@@ -274,6 +282,7 @@ namespace server
                     return;
                 }
                 
+                isAllInputTaken = true;
                 foreach (PlayerInfo pInf in players)
                 {
                     if (pInf.isInGame && !pInf.isInputTaken)
@@ -288,6 +297,20 @@ namespace server
                 }
             }
 
+            if (!isAllInputTaken)
+            {
+                var notInpTakenPlayers = players.Where(p => p.isInGame && !p.isInputTaken).ToList();
+                foreach (PlayerInfo pInf in notInpTakenPlayers)
+                {
+                    string notInpTakenMsg = "You did not enter your move in time. You are eliminated from the game.\n";
+                    byte[] notInpTakenBuffer = Encoding.Default.GetBytes(notInpTakenMsg);
+                    pInf.socket.Send(notInpTakenBuffer);
+                    pInf.isInGame = false;
+                    pInf.isInputTaken = false;
+                    pInf.move = "";
+                    pInf.inGameScore = 0;
+                }
+            }
 
             //Decide the winner
             var scores = new Dictionary<string, int>();
@@ -372,7 +395,9 @@ namespace server
                     plInf.isInputTaken = false;
                     plInf.move = "";
                 }
-                PlayTheGame();
+
+                argTuple = (winners.Count, true);
+                PlayTheGame(argTuple);
             }
 
         }
