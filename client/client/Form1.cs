@@ -89,6 +89,11 @@ namespace client
                             playerMove.Enabled = true;
                             button_send.Enabled = true;
                         }
+                        // Handling leaderboard updates
+                        if (incomingMessage.StartsWith("LeaderboardUpdate:"))
+                        {
+                            UpdateLeaderboardClient(incomingMessage.Replace("LeaderboardUpdate:", ""));
+                        }
                     }
                     else
                     {
@@ -109,6 +114,18 @@ namespace client
                     connected = false;
                 }
 
+            }
+        }
+
+        // Add this method in the Form1 class to update the client's leaderboard
+        private void UpdateLeaderboardClient(string leaderboardData)
+        {
+            leaderboard.Items.Clear();
+            string[] players = leaderboardData.Split(',');
+            foreach (string player in players)
+            {
+                string[] details = player.Split(':');
+                leaderboard.Items.Add(details[0] + ": " + details[1]);
             }
         }
 

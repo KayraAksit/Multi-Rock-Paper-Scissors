@@ -44,6 +44,7 @@ namespace server
             serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             winCounts = ReadWinCountsFromFile();
             UpdateLeaderboard(winCounts);
+            BroadcastLeaderboard(winCounts);
         }
 
         private void button_listen_Click(object sender, EventArgs e)
@@ -489,6 +490,7 @@ namespace server
             }
             WriteWinCountsToFile(winCounts);
             UpdateLeaderboard(winCounts);
+            BroadcastLeaderboard(winCounts);
         }
 
         // Method to update the leaderboard shown in the server GUI
@@ -501,6 +503,27 @@ namespace server
             foreach (var winCount in winCounts.OrderByDescending(pair => pair.Value))
             {
                 leaderboard.Items.Add(winCount.Key + ": " + winCount.Value);
+            }
+        }
+
+        // Add this method in the server's Form1 class
+        private void BroadcastLeaderboard(Dictionary<string, int> winCounts)
+        {
+            // Serialize the winCounts dictionary into a string
+            string leaderboardString = "LeaderboardUpdate:" + string.Join(",", winCounts.Select(x => x.Key + ":" + x.Value));
+
+            byte[] buffer = Encoding.Default.GetBytes(leaderboardString);
+
+            foreach (PlayerInfo player in players)
+            {
+                try
+                {
+                    player.socket.Send(buffer);
+                }
+                catch // If it fails to send, ignore the error.
+                {
+                    // You may choose to log this incident or remove the player from your active list.
+                }
             }
         }
 
