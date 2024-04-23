@@ -22,6 +22,16 @@ namespace server
         public string move;
         public int inGameScore;
 
+        public PlayerInfo(string _name, Socket _socket)
+        {
+            name = _name;
+            socket = _socket;
+            isInGame = false;
+            isInputTaken = false;
+            move = "";
+            inGameScore = 0;
+        }
+
     }
     public partial class Form1 : Form
     {
@@ -101,13 +111,8 @@ namespace server
                         Thread receiveThread = new Thread(() => MyReceive(newClient));
                         receiveThread.Start();
 
-                        PlayerInfo newPlayer = new PlayerInfo();
-                        newPlayer.name = username;
-                        newPlayer.socket = newClient;
-                        newPlayer.isInputTaken= false;
-                        newPlayer.move = "";
-                        newPlayer.inGameScore = 0;
-                        
+                        PlayerInfo newPlayer = new PlayerInfo(username, newClient);
+
                         // Check if the game has enough players
                         int inGameCount = players.Count(p => p.isInGame == true);
                         if(inGameCount < maxClients)
@@ -142,7 +147,6 @@ namespace server
                         }
                         else
                         {
-                            newPlayer.isInGame = false;
                             logs.AppendText("A player entered the waiting queue.\n");
                             NotifyClientQueueStatus(newClient);
                             players.Add(newPlayer);
