@@ -20,6 +20,7 @@ namespace server
     public partial class Form1 : Form
     {
         #region VARIABLES
+
         //Initialize the dictionary to store player names
         List<PlayerInfo> players = new List<PlayerInfo>();
 
@@ -542,16 +543,6 @@ namespace server
                             //players.Add(plInf);
                             
                         }   
-
-                        // Broadcast the message to all clients in the game
-                        //foreach (Socket socket in clientSockets)
-                        //{
-                        //    if (socket != thisClient)
-                        //    {
-                        //        byte[] bufferClient = Encoding.Default.GetBytes("BROADCAST: " + incomingMessage);
-                        //        socket.Send(bufferClient);
-                        //    }
-                        //}
                     }
                     else
                     {
@@ -598,7 +589,6 @@ namespace server
                         players.RemoveAll(p => p.socket == thisClient);
                     }
 
-                   
                     thisClient.Close();
                     connected = false;
 

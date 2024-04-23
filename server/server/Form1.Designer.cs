@@ -35,13 +35,17 @@
             this.Label2 = new System.Windows.Forms.Label();
             this.textBox_message = new System.Windows.Forms.TextBox();
             this.button_send = new System.Windows.Forms.Button();
+
             this.leaderboard = new System.Windows.Forms.ListBox();
+
             this.SuspendLayout();
             // 
             // textBox_port
             // 
             this.textBox_port.Location = new System.Drawing.Point(88, 69);
+          
             this.textBox_port.Margin = new System.Windows.Forms.Padding(2);
+
             this.textBox_port.Name = "textBox_port";
             this.textBox_port.Size = new System.Drawing.Size(138, 20);
             this.textBox_port.TabIndex = 0;
@@ -61,7 +65,9 @@
             // button_listen
             // 
             this.button_listen.Location = new System.Drawing.Point(234, 66);
+
             this.button_listen.Margin = new System.Windows.Forms.Padding(2);
+
             this.button_listen.Name = "button_listen";
             this.button_listen.Size = new System.Drawing.Size(56, 22);
             this.button_listen.TabIndex = 2;
@@ -72,7 +78,9 @@
             // logs
             // 
             this.logs.Location = new System.Drawing.Point(42, 112);
+
             this.logs.Margin = new System.Windows.Forms.Padding(2);
+
             this.logs.Name = "logs";
             this.logs.Size = new System.Drawing.Size(338, 171);
             this.logs.TabIndex = 3;
@@ -93,7 +101,9 @@
             // 
             this.textBox_message.Enabled = false;
             this.textBox_message.Location = new System.Drawing.Point(96, 312);
+
             this.textBox_message.Margin = new System.Windows.Forms.Padding(2);
+
             this.textBox_message.Name = "textBox_message";
             this.textBox_message.Size = new System.Drawing.Size(216, 20);
             this.textBox_message.TabIndex = 5;
@@ -102,7 +112,9 @@
             // 
             this.button_send.Enabled = false;
             this.button_send.Location = new System.Drawing.Point(320, 306);
+
             this.button_send.Margin = new System.Windows.Forms.Padding(2);
+
             this.button_send.Name = "button_send";
             this.button_send.Size = new System.Drawing.Size(59, 28);
             this.button_send.TabIndex = 6;
@@ -112,18 +124,22 @@
             // 
             // leaderboard
             // 
+
             this.leaderboard.FormattingEnabled = true;
             this.leaderboard.Location = new System.Drawing.Point(399, 70);
             this.leaderboard.Name = "leaderboard";
             this.leaderboard.Size = new System.Drawing.Size(221, 264);
             this.leaderboard.TabIndex = 7;
             this.leaderboard.SelectedIndexChanged += new System.EventHandler(this.leaderboard_SelectedIndexChanged);
+
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+
             this.ClientSize = new System.Drawing.Size(632, 382);
+
             this.Controls.Add(this.leaderboard);
             this.Controls.Add(this.button_send);
             this.Controls.Add(this.textBox_message);
@@ -132,7 +148,9 @@
             this.Controls.Add(this.button_listen);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.textBox_port);
+
             this.Margin = new System.Windows.Forms.Padding(2);
+
             this.Name = "Form1";
             this.Text = "Form1";
             this.ResumeLayout(false);
@@ -149,7 +167,9 @@
         private System.Windows.Forms.Label Label2;
         private System.Windows.Forms.TextBox textBox_message;
         private System.Windows.Forms.Button button_send;
+
         private System.Windows.Forms.ListBox leaderboard;
+
     }
 }
 
