@@ -103,6 +103,7 @@ namespace server
 
                         int winCount = ReadWinCountsFromFile().TryGetValue(username, out winCount) ? winCount : 0;
                         PlayerInfo newPlayer = new PlayerInfo(username, newClient, winCount);
+                        SendLeaderboard(winCounts, newPlayer);
 
                         // Check if the game has enough players
                         int inGameCount = players.Count(p => p.isInGame == true);
@@ -500,6 +501,7 @@ namespace server
             // such as a ListBox, DataGridView, or other suitable control.
             // For example, if you have a ListBox named leaderboard:
             leaderboard.Items.Clear();
+            leaderboard.Items.Add("LEADERBOARD:\n");
             foreach (var winCount in winCounts.OrderByDescending(pair => pair.Value))
             {
                 leaderboard.Items.Add(winCount.Key + ": " + winCount.Value);
@@ -525,6 +527,20 @@ namespace server
                     // You may choose to log this incident or remove the player from your active list.
                 }
             }
+        }
+        private void SendLeaderboard(Dictionary<string, int> winCounts, PlayerInfo target_player)
+        {
+            // Serialize the winCounts dictionary into a string
+            string leaderboardString = "LeaderboardUpdate:" + string.Join(",", winCounts.Select(x => x.Key + ":" + x.Value));
+
+            byte[] buffer = Encoding.Default.GetBytes(leaderboardString);
+
+            try
+            {
+                target_player.socket.Send(buffer);
+            }
+            catch { }
+
         }
 
         private void leaderboard_SelectedIndexChanged(object sender, EventArgs e)

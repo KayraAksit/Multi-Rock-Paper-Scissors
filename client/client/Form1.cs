@@ -71,7 +71,7 @@ namespace client
             {
                 try 
                 {
-                    byte[] buffer = new byte[64];
+                    byte[] buffer = new byte[1024];
                     int receivedByteCount = clientSocket.Receive(buffer);
                     if (receivedByteCount > 0)
                     {
@@ -88,6 +88,11 @@ namespace client
                         {
                             playerMove.Enabled = true;
                             button_send.Enabled = true;
+                        }
+                        if (incomingMessage.Contains("The next round is starting"))
+                        {
+                            playerMove.Enabled = false;
+                            button_send.Enabled = false;
                         }
                         // Handling leaderboard updates
                         if (incomingMessage.StartsWith("LeaderboardUpdate:"))
@@ -121,6 +126,7 @@ namespace client
         private void UpdateLeaderboardClient(string leaderboardData)
         {
             leaderboard.Items.Clear();
+            leaderboard.Items.Add("LEADERBOARD: \n");
             string[] players = leaderboardData.Split(',');
             foreach (string player in players)
             {
