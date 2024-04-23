@@ -41,6 +41,7 @@ namespace server
 
         const int maxClients = 3; //Define max number of players playing simultaneously
         int activeMaxClients = maxClients; //Define max number of players playing simultaneously in the current round
+        bool isSecondRound = false;
 
         Socket serverSocket;
         //List<Socket> clientSockets = new List<Socket>();
@@ -116,7 +117,7 @@ namespace server
 
                         // Check if the game has enough players
                         int inGameCount = players.Count(p => p.isInGame == true);
-                        if(inGameCount < activeMaxClients)
+                        if(inGameCount < activeMaxClients && !isSecondRound)
                         {
                             NotifyPlayerEnteredGame(username);
 
@@ -132,11 +133,9 @@ namespace server
                                     NotifyClientGameStart(pInf.socket);
                                 }
 
-                                //Is it the second round
-                                var isSecond = false;
                                 //Test play the game
-                                Thread gameThread = new Thread(new ParameterizedThreadStart(PlayTheGame));
-                                gameThread.Start(isSecond);
+                                Thread gameThread = new Thread(new ThreadStart(PlayTheGame));
+                                gameThread.Start();
 
                             }
                             else {
@@ -204,7 +203,7 @@ namespace server
         //Second boolean argumant is for not taking anyone from the waiting queue when the second round starts
         private bool StartCountDown(int playerNum, bool isSecondRound)
         {
-            int countdownTime = 10; // 10 seconds
+            int countdownTime = 15; // 10 seconds
             while (countdownTime > 0)
             {
                 Thread.Sleep(1000); // wait for 1 second
@@ -257,10 +256,10 @@ namespace server
             }
             return true;
         }
-        private void PlayTheGame(object isSecond) //isSecondRound will be passed into the StartCountDown to prevent taking players from the waiting queue
+        private void PlayTheGame() //isSecondRound will be passed into the StartCountDown to prevent taking players from the waiting queue
         {
-            var isSecondRound= (bool) isSecond;
 
+            //Someone disconnected during the countdown therefore the game cannot be played
             if (!StartCountDown(activeMaxClients, isSecondRound))
             {
                 return;
@@ -379,6 +378,7 @@ namespace server
             {
                 //Active max players back to the original
                 activeMaxClients = maxClients;
+                isSecondRound = false;
 
                 string winMsg = winners[0] + " has won the game!\n";
                 byte[] winBuffer = Encoding.Default.GetBytes(winMsg);
@@ -420,9 +420,9 @@ namespace server
                     plInf.move = "";
                 }
 
-                isSecond = true;
+                isSecondRound = true;
                 activeMaxClients = winners.Count;
-                PlayTheGame(isSecond);
+                PlayTheGame();
             }
 
         }
