@@ -467,7 +467,7 @@ namespace server
             }
             try
             {
-                File.WriteAllLines("leaderboard.txt", lines);
+                File.WriteAllLines("../../leaderboard.txt", lines);
             }
             catch (Exception e)
             {
