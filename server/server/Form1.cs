@@ -210,6 +210,23 @@ namespace server
                 // Check current inGame count
                 int inGameCount = players.Count(p => p.isInGame == true);
 
+                while (inGameCount < playerNum && !isSecondRound)
+                {
+                    // Check if there are any players in the waiting queue
+                    var waitingPlayer = players.FirstOrDefault(p => p.isInGame == false);
+
+                    if (waitingPlayer != null)// Check if waiting players can join evaluates to false if there is no waiting player
+                    {
+                        waitingPlayer.isInGame = true;
+                        NotifyClientGameStart(waitingPlayer.socket);
+                        inGameCount = players.Count(p => p.isInGame == true);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
                 if (inGameCount != playerNum && !isSecondRound)
                 {
                     string notEnoughPlayersMsg = "Player left. Waiting for more players.\n";
@@ -466,24 +483,25 @@ namespace server
                         players.RemoveAll(p => p.name == username);
 
 
-                        //Check if there are any players in the waiting queue
-                        var waitingPlayer = players.FirstOrDefault(p => p.isInGame == false);
+                        /////LOGIC MOVED INTO THE START COUNTDOWN
+                        ////Check if there are any players in the waiting queue
+                        //var waitingPlayer = players.FirstOrDefault(p => p.isInGame == false);
 
-                        if (waitingPlayer != null)// Check if waiting players can join evaluates to false if there is no waiting player
-                        {
-                            //players.Remove(waitingPlayer); 
-                            waitingPlayer.isInGame = true;
-                            //players.Add(waitingPlayer);
-                            NotifyClientGameStart(waitingPlayer.socket);
-                        }
-                        else
-                        {
-                            //LOGIC MOVED INTO THE START COUNTDOWN
-                            //foreach (PlayerInfo pInf in players) //Notify players of game start
-                            //{
-                            //    NotifyClientNotEnoughPlayers(pInf.socket);
-                            //}
-                        }
+                        //if (waitingPlayer != null)// Check if waiting players can join evaluates to false if there is no waiting player
+                        //{
+                        //    //players.Remove(waitingPlayer); 
+                        //    waitingPlayer.isInGame = true;
+                        //    //players.Add(waitingPlayer);
+                        //    NotifyClientGameStart(waitingPlayer.socket);
+                        //}
+                        //else
+                        //{
+                        //    //LOGIC MOVED INTO THE START COUNTDOWN
+                        //    //foreach (PlayerInfo pInf in players) //Notify players of game start
+                        //    //{
+                        //    //    NotifyClientNotEnoughPlayers(pInf.socket);
+                        //    //}
+                        //}
                     }
                     else
                     {
