@@ -435,7 +435,7 @@ namespace server
             Dictionary<string, int> winCounts = new Dictionary<string, int>();
             try
             {
-                string[] lines = File.ReadAllLines("leaderboard.txt");
+                string[] lines = File.ReadAllLines("../../leaderboard.txt");
                 foreach (string line in lines)
                 {
                     string[] parts = line.Split(',');

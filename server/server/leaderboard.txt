@@ -1,0 +1,5 @@
+player1,8
+player2,8
+player3,34
+player6,1
+eren,1
