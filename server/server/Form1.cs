@@ -40,6 +40,7 @@ namespace server
         List<PlayerInfo> players = new List<PlayerInfo>();
 
         const int maxClients = 3; //Define max number of players playing simultaneously
+        int activeMaxClients = maxClients; //Define max number of players playing simultaneously in the current round
 
         Socket serverSocket;
         //List<Socket> clientSockets = new List<Socket>();
@@ -115,7 +116,7 @@ namespace server
 
                         // Check if the game has enough players
                         int inGameCount = players.Count(p => p.isInGame == true);
-                        if(inGameCount < maxClients)
+                        if(inGameCount < activeMaxClients)
                         {
                             NotifyPlayerEnteredGame(username);
 
@@ -123,7 +124,7 @@ namespace server
                             logs.AppendText(username + " has connected to the game.\n");
 
                             //Check if there are enough players to start the game now
-                            if (inGameCount +1 == maxClients)
+                            if (inGameCount +1 == activeMaxClients)
                             {
                                 players.Add(newPlayer);
                                 foreach (PlayerInfo pInf in players) //Notify players of game start
@@ -131,10 +132,11 @@ namespace server
                                     NotifyClientGameStart(pInf.socket);
                                 }
 
-                                var argTuple = (maxClients, false);
+                                //Is it the second round
+                                var isSecond = false;
                                 //Test play the game
                                 Thread gameThread = new Thread(new ParameterizedThreadStart(PlayTheGame));
-                                gameThread.Start(argTuple);
+                                gameThread.Start(isSecond);
 
                             }
                             else {
@@ -255,13 +257,11 @@ namespace server
             }
             return true;
         }
-        private void PlayTheGame(object playerNum_isSecondRound) //isSecondRound will be passed into the StartCountDown to prevent taking players from the waiting queue
+        private void PlayTheGame(object isSecond) //isSecondRound will be passed into the StartCountDown to prevent taking players from the waiting queue
         {
-            var argTuple= ((int,bool))playerNum_isSecondRound;
-            int pNum = argTuple.Item1;
-            bool isSecondRound = argTuple.Item2;
+            var isSecondRound= (bool) isSecond;
 
-            if (!StartCountDown(pNum, isSecondRound))
+            if (!StartCountDown(activeMaxClients, isSecondRound))
             {
                 return;
             }
@@ -377,6 +377,9 @@ namespace server
 
             if (winners.Count == 1)
             {
+                //Active max players back to the original
+                activeMaxClients = maxClients;
+
                 string winMsg = winners[0] + " has won the game!\n";
                 byte[] winBuffer = Encoding.Default.GetBytes(winMsg);
                 foreach (PlayerInfo pInf in players)
@@ -417,8 +420,9 @@ namespace server
                     plInf.move = "";
                 }
 
-                argTuple = (winners.Count, true);
-                PlayTheGame(argTuple);
+                isSecond = true;
+                activeMaxClients = winners.Count;
+                PlayTheGame(isSecond);
             }
 
         }
