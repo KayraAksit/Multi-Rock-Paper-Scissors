@@ -123,17 +123,46 @@ namespace client
         }
 
         // Add this method in the Form1 class to update the client's leaderboard
+        //private void UpdateLeaderboardClient(string leaderboardData)
+        //{
+        //    leaderboard.Items.Clear();
+        //    leaderboard.Items.Add("LEADERBOARD: \n");
+        //    string[] players = leaderboardData.Split(',');
+        //    foreach (string player in players)
+        //    {
+        //        string[] details = player.Split(':');
+        //        leaderboard.Items.Add(details[0] + ": " + details[1]);
+        //    }
+        //}
+
         private void UpdateLeaderboardClient(string leaderboardData)
         {
             leaderboard.Items.Clear();
             leaderboard.Items.Add("LEADERBOARD: \n");
+
+            // Split the leaderboard data into an array of players
             string[] players = leaderboardData.Split(',');
+
+            // Create a list to hold player details
+            List<string[]> playerDetails = new List<string[]>();
+
+            // Populate the player details list
             foreach (string player in players)
             {
                 string[] details = player.Split(':');
+                playerDetails.Add(details);
+            }
+
+            // Sort the player details list based on the score in descending order
+            playerDetails.Sort((x, y) => int.Parse(y[1]).CompareTo(int.Parse(x[1])));
+
+            // Add sorted player details to the leaderboard
+            foreach (string[] details in playerDetails)
+            {
                 leaderboard.Items.Add(details[0] + ": " + details[1]);
             }
         }
+
 
         private void Form1_FormClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {
