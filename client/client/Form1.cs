@@ -181,6 +181,12 @@ namespace client
                 clientSocket.Send(buffer);
             }
 
+            if (playerMove.Text != "")
+            {
+                playerMove.Enabled = false;
+                button_send.Enabled = false;
+            }
+
         }
     }
 }
