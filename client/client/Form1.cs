@@ -188,5 +188,16 @@ namespace client
             }
 
         }
+
+        private void button_leavegame_Click(object sender, EventArgs e)
+        {
+            string message = textBox_name.Text + " " + "leavegame";
+
+            if (message != "" && message.Length <= 64)
+            {
+                Byte[] buffer = Encoding.Default.GetBytes(message);
+                clientSocket.Send(buffer);
+            }
+        }
     }
 }

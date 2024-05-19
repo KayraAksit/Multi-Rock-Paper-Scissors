@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -160,6 +161,15 @@ namespace server
         #endregion
 
         #region NOTIFICATIONS
+
+        private void BroadCastMessage(string message)
+        {
+            byte[] messageBuffer = Encoding.Default.GetBytes(message);
+            foreach (PlayerInfo pInf in players)
+            {
+                pInf.socket.Send(messageBuffer);
+            }
+        }
         private void NotifyClientGameStart(Socket client)
         {
             string gameStartMsg = "The game will start in shortly!\n";
@@ -213,7 +223,7 @@ namespace server
                 while (inGameCount < playerNum && !isSecondRound)
                 {
                     // Check if there are any players in the waiting queue
-                    var waitingPlayer = players.FirstOrDefault(p => p.isInGame == false);
+                    var waitingPlayer = players.FirstOrDefault(p => p.isInGame == false && p.isLeft == false);
 
                     if (waitingPlayer != null)// Check if waiting players can join evaluates to false if there is no waiting player
                     {
@@ -366,12 +376,12 @@ namespace server
             {
                 foreach(var pl in players)
                 {
-                    if (pl.isInGame)
-                    {
-                        string moveMsg = pl.name + " played " + pl.move + ".\n";
-                        byte[] moveBuffer = Encoding.Default.GetBytes(moveMsg);
-                        players.FirstOrDefault(item => item.name == entry.Key).socket.Send(moveBuffer);
-                    }
+                    //if (pl.isInGame)
+                    //{
+                    string moveMsg = pl.name + " played " + pl.move + ".\n";
+                    byte[] moveBuffer = Encoding.Default.GetBytes(moveMsg);
+                    players.FirstOrDefault(item => item.name == entry.Key).socket.Send(moveBuffer);
+                    //}
                 }
             }
 
@@ -392,7 +402,7 @@ namespace server
                     }
                 }
 
-                //One player one, restart the game if enough players left
+                //One player won, restart the game if enough players left
                 int currentPlayer = players.Count;
                 if (currentPlayer >= maxClients)
                 {
@@ -428,7 +438,6 @@ namespace server
                         plInf.isInputTaken = false;
                         plInf.move = "";
                         plInf.inGameScore = 0;
-                        //changes.Add(plInf);;
                     }
                 }
                 foreach (var winner in winners)
@@ -585,6 +594,21 @@ namespace server
 
                         var nameMovePair = incomingMessage.Split(' ');
 
+                        // Player wants to LEAVE the game
+                        if (nameMovePair[1] == "leavegame") 
+                        {
+                            var plInf = players.FirstOrDefault(item => item.name == nameMovePair[0]);
+                            plInf.isInGame = false;
+                            plInf.isLeft = true;
+                            plInf.isInputTaken = false;
+                            plInf.move = "";
+                            plInf.inGameScore = 0;
+
+                            //Broadcast the left player
+                            string leaveMessage = "Player " + nameMovePair[0] + " left the game";
+                            BroadCastMessage(leaveMessage);
+                        }
+
                         //IN GAME LOGIC
                         if (nameMovePair[1] == "Rock" || nameMovePair[1] == "Paper" || nameMovePair[1] == "Scissors")
                         {
@@ -592,10 +616,8 @@ namespace server
                             byte[] inputTakenBuffer = Encoding.Default.GetBytes(inputTakenMsg);
                             thisClient.Send(inputTakenBuffer);
                             var plInf = players.FirstOrDefault(item => item.name == nameMovePair[0]);
-                            //players.Remove(plInf);
                             plInf.isInputTaken = true;
                             plInf.move = nameMovePair[1];
-                            //players.Add(plInf);
                             
                         }   
                     }
@@ -611,31 +633,10 @@ namespace server
                     {
                         logs.AppendText("Active player has disconnected\n");
 
-                        //Remove from the dictionary
+                        //Remove from the list
                         string username = players.FirstOrDefault(p => p.socket == thisClient).name;
-                        //players.Remove(username); //Remove from the dictionary
                         players.RemoveAll(p => p.name == username);
 
-
-                        /////LOGIC MOVED INTO THE START COUNTDOWN
-                        ////Check if there are any players in the waiting queue
-                        //var waitingPlayer = players.FirstOrDefault(p => p.isInGame == false);
-
-                        //if (waitingPlayer != null)// Check if waiting players can join evaluates to false if there is no waiting player
-                        //{
-                        //    //players.Remove(waitingPlayer); 
-                        //    waitingPlayer.isInGame = true;
-                        //    //players.Add(waitingPlayer);
-                        //    NotifyClientGameStart(waitingPlayer.socket);
-                        //}
-                        //else
-                        //{
-                        //    //LOGIC MOVED INTO THE START COUNTDOWN
-                        //    //foreach (PlayerInfo pInf in players) //Notify players of game start
-                        //    //{
-                        //    //    NotifyClientNotEnoughPlayers(pInf.socket);
-                        //    //}
-                        //}
                     }
                     else
                     {
@@ -719,6 +720,7 @@ public class PlayerInfo
     public Socket socket;
     public bool isInGame;
     public bool isInputTaken;
+    public bool isLeft;
     public string move;
     public int inGameScore;
     public int winCount;
@@ -729,6 +731,7 @@ public class PlayerInfo
         socket = _socket;
         isInGame = false;
         isInputTaken = false;
+        isLeft = false;
         move = "";
         inGameScore = 0;
         winCount = _winCount;
