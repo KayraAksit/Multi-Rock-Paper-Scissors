@@ -150,7 +150,7 @@
             "Paper",
             "Scissors"});
             this.playerMove.Location = new System.Drawing.Point(96, 269);
-            this.playerMove.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.playerMove.Margin = new System.Windows.Forms.Padding(2);
             this.playerMove.Name = "playerMove";
             this.playerMove.Size = new System.Drawing.Size(82, 21);
             this.playerMove.TabIndex = 11;
@@ -158,16 +158,16 @@
             // leaderboard
             // 
             this.leaderboard.FormattingEnabled = true;
-            this.leaderboard.Location = new System.Drawing.Point(468, 57);
+            this.leaderboard.Location = new System.Drawing.Point(453, 57);
             this.leaderboard.Name = "leaderboard";
-            this.leaderboard.Size = new System.Drawing.Size(151, 238);
+            this.leaderboard.Size = new System.Drawing.Size(281, 238);
             this.leaderboard.TabIndex = 12;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(631, 358);
+            this.ClientSize = new System.Drawing.Size(755, 358);
             this.Controls.Add(this.leaderboard);
             this.Controls.Add(this.playerMove);
             this.Controls.Add(this.label4);
