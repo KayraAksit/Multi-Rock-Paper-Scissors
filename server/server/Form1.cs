@@ -105,6 +105,7 @@ namespace server
                         int winCount = ReadWinCountsFromFile().TryGetValue(username, out winCount) ? winCount : 0;
                         PlayerInfo newPlayer = new PlayerInfo(username, newClient, winCount);
                         SendLeaderboard(winCounts, newPlayer);
+                        
 
                         // Check if the game has enough players
                         int inGameCount = players.Count(p => p.isInGame == true);
@@ -374,15 +375,9 @@ namespace server
 
             foreach (var entry in scores)
             {
-                foreach(var pl in players)
-                {
-                    //if (pl.isInGame)
-                    //{
-                    string moveMsg = pl.name + " played " + pl.move + ".\n";
-                    byte[] moveBuffer = Encoding.Default.GetBytes(moveMsg);
-                    players.FirstOrDefault(item => item.name == entry.Key).socket.Send(moveBuffer);
-                    //}
-                }
+                var pl = players.FirstOrDefault(item => item.name == entry.Key);
+                string moveMsg = pl.name + " played " + pl.move + ".\n";
+                BroadCastMessage(moveMsg);
             }
 
             if (winners.Count == 1)
@@ -563,6 +558,7 @@ namespace server
             try
             {
                 target_player.socket.Send(buffer);
+                Thread.Sleep(200);
             }
             catch { }
 

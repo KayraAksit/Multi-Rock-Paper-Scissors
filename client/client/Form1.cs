@@ -72,7 +72,7 @@ namespace client
             {
                 try 
                 {
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[10000];
                     int receivedByteCount = clientSocket.Receive(buffer);
                     if (receivedByteCount > 0)
                     {
@@ -131,19 +131,6 @@ namespace client
 
             }
         }
-
-        // Add this method in the Form1 class to update the client's leaderboard
-        //private void UpdateLeaderboardClient(string leaderboardData)
-        //{
-        //    leaderboard.Items.Clear();
-        //    leaderboard.Items.Add("LEADERBOARD: \n");
-        //    string[] players = leaderboardData.Split(',');
-        //    foreach (string player in players)
-        //    {
-        //        string[] details = player.Split(':');
-        //        leaderboard.Items.Add(details[0] + ": " + details[1]);
-        //    }
-        //}
 
         private void UpdateLeaderboardClient(string leaderboardData)
         {
