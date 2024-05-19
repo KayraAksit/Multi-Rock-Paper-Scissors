@@ -157,6 +157,7 @@
             // 
             // button_leavegame
             // 
+            this.button_leavegame.Enabled = false;
             this.button_leavegame.Location = new System.Drawing.Point(100, 295);
             this.button_leavegame.Name = "button_leavegame";
             this.button_leavegame.Size = new System.Drawing.Size(165, 34);

@@ -40,6 +40,7 @@ namespace client
                     button_connect.Enabled = false;
                     playerMove.Enabled = false;
                     button_send.Enabled = false;
+                    button_leavegame.Enabled = true;
                     connected = true;
                     logs.AppendText("Connected to the server!\n");
 
@@ -76,7 +77,16 @@ namespace client
                     if (receivedByteCount > 0)
                     {
                         string incomingMessage = Encoding.Default.GetString(buffer).Substring(0, receivedByteCount);
-                        logs.AppendText(incomingMessage + "\n");
+
+                        if(!incomingMessage.Contains("LeaderboardUpdate"))
+                        {
+                            logs.AppendText(incomingMessage + "\n");
+                        }
+                        else
+                        {
+                            logs.AppendText("Leaderboard Updated \n");
+                        }
+                        
 
                         // When in the queue, ignore other messages
                         if (incomingMessage.Contains("waiting queue"))
