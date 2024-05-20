@@ -1,8 +1,8 @@
-player1,8
+player1,12
 player2,7
 player3,8
 player4,10
-player5,6
-player6,1
+player5,8
+player6,2
 player8,1
 player7,2
