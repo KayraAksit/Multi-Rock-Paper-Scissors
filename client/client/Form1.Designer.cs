@@ -140,7 +140,10 @@
             "Rock",
             "Paper",
             "Scissors"});
-            this.playerMove.Location = new System.Drawing.Point(144, 414);
+
+            this.playerMove.Location = new System.Drawing.Point(96, 269);
+            this.playerMove.Margin = new System.Windows.Forms.Padding(2);
+
             this.playerMove.Name = "playerMove";
             this.playerMove.Size = new System.Drawing.Size(121, 28);
             this.playerMove.TabIndex = 11;
@@ -148,11 +151,11 @@
             // leaderboard
             // 
             this.leaderboard.FormattingEnabled = true;
-            this.leaderboard.ItemHeight = 20;
-            this.leaderboard.Location = new System.Drawing.Point(702, 88);
-            this.leaderboard.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+
+            this.leaderboard.Location = new System.Drawing.Point(453, 57);
             this.leaderboard.Name = "leaderboard";
-            this.leaderboard.Size = new System.Drawing.Size(224, 364);
+            this.leaderboard.Size = new System.Drawing.Size(281, 238);
+
             this.leaderboard.TabIndex = 12;
             // 
             // button_leavegame
@@ -170,8 +173,10 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(946, 551);
+
+            this.ClientSize = new System.Drawing.Size(755, 358);
             this.Controls.Add(this.button_leavegame);
+
             this.Controls.Add(this.leaderboard);
             this.Controls.Add(this.playerMove);
             this.Controls.Add(this.label4);
