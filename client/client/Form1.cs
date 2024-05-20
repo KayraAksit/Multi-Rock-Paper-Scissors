@@ -76,16 +76,55 @@ namespace client
                     int receivedByteCount = clientSocket.Receive(buffer);
                     if (receivedByteCount > 0)
                     {
-                        string incomingMessage = Encoding.Default.GetString(buffer).Substring(0, receivedByteCount);
+                        string incomingMessage = Encoding.Default.GetString(buffer, 0, receivedByteCount);
 
-                        if(!incomingMessage.Contains("LeaderboardUpdate"))
+                        if (!incomingMessage.Contains("LeaderboardUpdate"))
                         {
-                            logs.AppendText(incomingMessage + "\n");
+                            // Handle "Game starting in" countdown message
+                            if (incomingMessage.StartsWith("Game starting in ") && incomingMessage.EndsWith(" seconds!\n"))
+                            {
+                                // Remove previous "Game starting in" countdown message if it exists
+                                string logsText = logs.Text;
+                                int startIndex = logsText.LastIndexOf("Game starting in ");
+                                if (startIndex != -1)
+                                {
+                                    int endIndex = logsText.IndexOf('\n', startIndex);
+                                    if (endIndex != -1)
+                                    {
+                                        logsText = logsText.Remove(startIndex, endIndex - startIndex + 1);
+                                    }
+                                }
+                                logs.Text = logsText + incomingMessage;
+                            }
+                            // Handle "Time left" countdown message
+                            else if (incomingMessage.StartsWith("Time left: ") && incomingMessage.EndsWith(" seconds\n"))
+                            {
+                                // Remove previous "Time left" countdown message if it exists
+                                string logsText = logs.Text;
+                                int startIndex = logsText.LastIndexOf("Time left: ");
+                                if (startIndex != -1)
+                                {
+                                    int endIndex = logsText.IndexOf('\n', startIndex);
+                                    if (endIndex != -1)
+                                    {
+                                        logsText = logsText.Remove(startIndex, endIndex - startIndex + 1);
+                                    }
+                                }
+                                logs.Text = logsText + incomingMessage;
+                            }
+                            else
+                            {
+                                logs.AppendText(incomingMessage + "\n");
+                            }
                         }
                         else
                         {
                             logs.AppendText("Leaderboard Updated \n");
                         }
+
+                        // Scroll to the bottom
+                        logs.SelectionStart = logs.Text.Length;
+                        logs.ScrollToCaret();
 
                         // When in the queue, ignore other messages
                         if (incomingMessage.Contains("waiting queue"))
@@ -109,6 +148,7 @@ namespace client
                             UpdateLeaderboardClient(incomingMessage.Replace("LeaderboardUpdate:", ""));
                         }
                     }
+
                     else
                     {
                         throw new SocketException(); // Assume the connection is closed if no data is received
