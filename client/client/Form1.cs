@@ -32,7 +32,7 @@ namespace client
             string IP = textBox_ip.Text;
 
             int portNum;
-            if(Int32.TryParse(textBox_port.Text, out portNum))
+            if (Int32.TryParse(textBox_port.Text, out portNum))
             {
                 try
                 {
@@ -68,9 +68,9 @@ namespace client
 
         private void Receive()
         {
-            while(connected)
+            while (connected)
             {
-                try 
+                try
                 {
                     byte[] buffer = new byte[10000];
                     int receivedByteCount = clientSocket.Receive(buffer);
@@ -86,7 +86,6 @@ namespace client
                         {
                             logs.AppendText("Leaderboard Updated \n");
                         }
-                        
 
                         // When in the queue, ignore other messages
                         if (incomingMessage.Contains("waiting queue"))
@@ -148,6 +147,7 @@ namespace client
             {
                 string[] details = player.Split(':');
                 playerDetails.Add(details);
+                //logs.AppendText($"{details[0]}=> W/L/P: {details[1]}/{details[2]}/{details[3]}\n");
             }
 
             // Sort the player details list based on the score in descending order
@@ -156,7 +156,7 @@ namespace client
             // Add sorted player details to the leaderboard
             foreach (string[] details in playerDetails)
             {
-                leaderboard.Items.Add(details[0] + ": " + details[1]);
+                leaderboard.Items.Add($"Player: {details[0]}, Wins: {details[1]}, Losses: {details[2]}, Played: {details[3]}\n");
             }
         }
 
@@ -172,7 +172,7 @@ namespace client
         {
             string message = textBox_name.Text + " " + playerMove.Text;
 
-            if(message != "" && message.Length <= 64)
+            if (message != "" && message.Length <= 64)
             {
                 Byte[] buffer = Encoding.Default.GetBytes(message);
                 clientSocket.Send(buffer);
@@ -189,6 +189,9 @@ namespace client
         private void button_leavegame_Click(object sender, EventArgs e)
         {
             string message = textBox_name.Text + " " + "leavegame";
+
+            playerMove.Enabled = false;
+            button_send.Enabled = false;
 
             if (message != "" && message.Length <= 64)
             {

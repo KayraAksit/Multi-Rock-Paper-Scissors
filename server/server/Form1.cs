@@ -28,7 +28,7 @@ namespace server
         int activeMaxClients = maxClients; //Define max number of players playing simultaneously in the current round
 
         Socket serverSocket;
-        Dictionary<string, int> winCounts;
+        Dictionary<string, PlayerStatistics> playerStats;
 
         bool isSecondRound = false;
         bool terminating = false;
@@ -43,9 +43,9 @@ namespace server
             InitializeComponent();
 
             serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            winCounts = ReadWinCountsFromFile();
-            UpdateLeaderboard(winCounts);
-            BroadcastLeaderboard(winCounts);
+            playerStats = ReadWinCountsFromFile();
+            UpdateLeaderboard(playerStats);
+            BroadcastLeaderboard(playerStats);
         }
 
         private void button_listen_Click(object sender, EventArgs e)
@@ -102,10 +102,10 @@ namespace server
                         Thread receiveThread = new Thread(() => MyReceive(newClient));
                         receiveThread.Start();
 
-                        int winCount = ReadWinCountsFromFile().TryGetValue(username, out winCount) ? winCount : 0;
-                        PlayerInfo newPlayer = new PlayerInfo(username, newClient, winCount);
-                        SendLeaderboard(winCounts, newPlayer);
-                        
+                        PlayerStatistics playerStatistics = ReadWinCountsFromFile().TryGetValue(username, out playerStatistics) ? playerStatistics : new PlayerStatistics(0, 0, 0);
+                        PlayerInfo newPlayer = new PlayerInfo(username, newClient, playerStatistics);
+                        SendLeaderboard(playerStats, newPlayer);
+
 
                         // Check if the game has enough players
                         int inGameCount = players.Count(p => p.isInGame == true);
@@ -180,9 +180,6 @@ namespace server
 
         private void NotifyPlayerEnteredGame(string username)
         {
-            var winCounts = ReadWinCountsFromFile();
-            int winCount = winCounts.ContainsKey(username) ? winCounts[username] : 0;
-
             string plEnteredMsg = username + " has entered the game!\n";
             byte[] plEnteredBuffer = Encoding.Default.GetBytes(plEnteredMsg);
             foreach (PlayerInfo pInf in players)
@@ -311,7 +308,23 @@ namespace server
                     {
                         pInf.socket.Send(winBuffer);
                     }
-                    return;
+                    //One player won, restart the game if enough players left
+                    isSecondRound = false;
+                    activeMaxClients = maxClients;
+                    int currentPlayer = players.Count;
+                    if (currentPlayer >= maxClients)
+                    {
+                        foreach (PlayerInfo pInf in players)
+                        {
+                            pInf.isInputTaken = false;
+                            pInf.move = "";
+                            pInf.isInGame = false;
+                            pInf.inGameScore = 0;
+                        }
+                        //Test play the game              
+                        PlayTheGame();
+                    }
+                    //return;
                 }
                 
                 isAllInputTaken = true;
@@ -371,7 +384,20 @@ namespace server
                 }
             }
 
-            var winners = scores.Where(s => s.Value == scores.Values.Max()).Select(s => s.Key).ToList();
+            List<string> winners = new List<string>();
+
+            //stupid 2 same choice case
+            List<int> sortedScores = scores.Values.ToList();
+            sortedScores.Sort();
+            if (sortedScores.SequenceEqual(new List<int> { 1, 1, 1, 2 }))
+            {
+                var pairMove = players.Where(p => p.isInGame).GroupBy(p => p.move).Where(g => g.Count() > 1).Select(g => g.Key).ToList()[0];
+                winners = players.Where(p => p.isInGame && p.move == pairMove).Select(p => p.name).ToList();
+            }//Logical cases
+            else
+            {
+                winners = scores.Where(s => s.Value == scores.Values.Max()).Select(s => s.Key).ToList();
+            }
 
             foreach (var entry in scores)
             {
@@ -409,8 +435,7 @@ namespace server
                         pInf.inGameScore = 0;
                     }
                     //Test play the game
-                    Thread gameThread = new Thread(new ThreadStart(PlayTheGame));
-                    gameThread.Start();
+                    PlayTheGame();
                 }
             }
             else
@@ -452,22 +477,21 @@ namespace server
 
         #region LEADERBOARD FUNCTIONS
         // Helper method to read win counts from file
-        private Dictionary<string, int> ReadWinCountsFromFile()
+        private Dictionary<string, PlayerStatistics> ReadWinCountsFromFile()
         {
-            Dictionary<string, int> winCounts = new Dictionary<string, int>();
+            Dictionary<string, PlayerStatistics> playerStats = new Dictionary<string, PlayerStatistics>();
             try
             {
                 string[] lines = File.ReadAllLines("../../leaderboard.txt");
                 foreach (string line in lines)
                 {
                     string[] parts = line.Split(',');
-                    if (parts.Length == 2)
+                    if (parts.Length == 4)
                     {
                         string username = parts[0];
-                        int wins;
-                        if (int.TryParse(parts[1], out wins))
+                        if (int.TryParse(parts[1], out int wins) && int.TryParse(parts[2], out int losses) && int.TryParse(parts[3], out int totalGamesPlayed))
                         {
-                            winCounts[username] = wins;
+                            playerStats[username] = new PlayerStatistics(wins, losses, totalGamesPlayed);
                         }
                     }
                 }
@@ -476,16 +500,16 @@ namespace server
             {
                 logs.AppendText("Could not read win counts file: " + e.Message);
             }
-            return winCounts;
+            return playerStats;
         }
 
         // Helper method to write win counts to file
-        private void WriteWinCountsToFile(Dictionary<string, int> winCounts)
+        private void WriteWinCountsToFile(Dictionary<string, PlayerStatistics> playerStats)
         {
             List<string> lines = new List<string>();
-            foreach (var pair in winCounts)
+            foreach (var pair in playerStats)
             {
-                lines.Add(pair.Key + "," + pair.Value.ToString());
+                lines.Add($"{pair.Key},{pair.Value.winCount},{pair.Value.lossCount},{pair.Value.totalGamesPlayed}");
             }
             try
             {
@@ -500,58 +524,66 @@ namespace server
         // Call this method after determining the winner to update their win count
         private void UpdateWinCount(string winnerName)
         {
-            var winCounts = ReadWinCountsFromFile();
-            if (winCounts.ContainsKey(winnerName))
+            var playerStats = ReadWinCountsFromFile();
+            if (!playerStats.ContainsKey(winnerName))
             {
-                winCounts[winnerName]++;
+                playerStats[winnerName] = new PlayerStatistics(0, 0, 0); // Add new player statistics if not already present
             }
-            else
+
+            foreach (var player in players)
             {
-                winCounts[winnerName] = 1;
+                if (player.isInGame)
+                {
+                    if (player.name == winnerName)
+                    {
+                        playerStats[winnerName].IncrementWin();
+                    }
+                    else
+                    {
+                        if (!playerStats.ContainsKey(player.name))
+                        {
+                            playerStats[player.name] = new PlayerStatistics(0, 0, 0); // Add new player statistics if not already present
+                        }
+                        playerStats[player.name].IncrementLoss();
+                    }
+                }
             }
-            WriteWinCountsToFile(winCounts);
-            UpdateLeaderboard(winCounts);
-            BroadcastLeaderboard(winCounts);
+            WriteWinCountsToFile(playerStats);
+            UpdateLeaderboard(playerStats); 
+            BroadcastLeaderboard(playerStats); 
         }
 
         // Method to update the leaderboard shown in the server GUI
-        private void UpdateLeaderboard(Dictionary<string, int> winCounts)
+        private void UpdateLeaderboard(Dictionary<string, PlayerStatistics> playerStats)
         {
-            // This method should update the control in your GUI that displays the leaderboard,
-            // such as a ListBox, DataGridView, or other suitable control.
-            // For example, if you have a ListBox named leaderboard:
             leaderboard.Items.Clear();
             leaderboard.Items.Add("LEADERBOARD:\n");
-            foreach (var winCount in winCounts.OrderByDescending(pair => pair.Value))
+            foreach (var entry in playerStats.OrderByDescending(pair => pair.Value.winCount))
             {
-                leaderboard.Items.Add(winCount.Key + ": " + winCount.Value);
+                leaderboard.Items.Add($"{entry.Key}: Wins: {entry.Value.winCount}, Losses: {entry.Value.lossCount}, Played: {entry.Value.totalGamesPlayed}");
             }
         }
 
         // Add this method in the server's Form1 class
-        private void BroadcastLeaderboard(Dictionary<string, int> winCounts)
+        private void BroadcastLeaderboard(Dictionary<string, PlayerStatistics> playerStats)
         {
-            // Serialize the winCounts dictionary into a string
-            string leaderboardString = "LeaderboardUpdate:" + string.Join(",", winCounts.Select(x => x.Key + ":" + x.Value));
-
+            string leaderboardString = "LeaderboardUpdate:" + string.Join(",", playerStats.Select(x => $"{x.Key}:{x.Value.winCount}:{x.Value.lossCount}:{x.Value.totalGamesPlayed}"));
             byte[] buffer = Encoding.Default.GetBytes(leaderboardString);
-
             foreach (PlayerInfo player in players)
             {
                 try
                 {
                     player.socket.Send(buffer);
                 }
-                catch // If it fails to send, ignore the error.
+                catch
                 {
-                    // You may choose to log this incident or remove the player from your active list.
+                    // Optional: handle errors, e.g., log this event or remove the player from the list.
                 }
             }
         }
-        private void SendLeaderboard(Dictionary<string, int> winCounts, PlayerInfo target_player)
+        private void SendLeaderboard(Dictionary<string, PlayerStatistics> playerStats, PlayerInfo target_player)
         {
-            // Serialize the winCounts dictionary into a string
-            string leaderboardString = "LeaderboardUpdate:" + string.Join(",", winCounts.Select(x => x.Key + ":" + x.Value));
+            string leaderboardString = "LeaderboardUpdate:" + string.Join(",", playerStats.Select(x => $"{x.Key}:{x.Value.winCount}:{x.Value.lossCount}:{x.Value.totalGamesPlayed}"));
 
             byte[] buffer = Encoding.Default.GetBytes(leaderboardString);
 
@@ -561,7 +593,6 @@ namespace server
                 Thread.Sleep(200);
             }
             catch { }
-
         }
 
         private void leaderboard_SelectedIndexChanged(object sender, EventArgs e)
@@ -719,9 +750,9 @@ public class PlayerInfo
     public bool isLeft;
     public string move;
     public int inGameScore;
-    public int winCount;
+    public PlayerStatistics playerStats;
 
-    public PlayerInfo(string _name, Socket _socket, int _winCount)
+    public PlayerInfo(string _name, Socket _socket, PlayerStatistics _playerStats)
     {
         name = _name;
         socket = _socket;
@@ -730,7 +761,33 @@ public class PlayerInfo
         isLeft = false;
         move = "";
         inGameScore = 0;
-        winCount = _winCount;
+        playerStats = _playerStats;
     }
 
+}
+
+public class PlayerStatistics
+{
+    public int winCount;
+    public int lossCount;
+    public int totalGamesPlayed;
+
+    public PlayerStatistics(int _winCount, int _lossCount, int _totalGamesPlayed)
+    {
+        this.winCount = _winCount;
+        this.lossCount = _lossCount;
+        this.totalGamesPlayed = _totalGamesPlayed;
+    }
+
+    public void IncrementWin()
+    {
+        winCount++;
+        totalGamesPlayed++;
+    }
+
+    public void IncrementLoss()
+    {
+        lossCount++;
+        totalGamesPlayed++;
+    }
 }
