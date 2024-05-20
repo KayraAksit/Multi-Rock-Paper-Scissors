@@ -368,7 +368,20 @@ namespace server
                 }
             }
 
-            var winners = scores.Where(s => s.Value == scores.Values.Max()).Select(s => s.Key).ToList();
+            List<string> winners = new List<string>();
+
+            //stupid 2 same choice case
+            List<int> sortedScores = scores.Values.ToList();
+            sortedScores.Sort();
+            if (sortedScores.SequenceEqual(new List<int> { 1, 1, 1, 2 }))
+            {
+                var pairMove = players.Where(p => p.isInGame).GroupBy(p => p.move).Where(g => g.Count() > 1).Select(g => g.Key).ToList()[0];
+                winners = players.Where(p => p.isInGame && p.move == pairMove).Select(p => p.name).ToList();
+            }//Logical cases
+            else
+            {
+                winners = scores.Where(s => s.Value == scores.Values.Max()).Select(s => s.Key).ToList();
+            }
 
             foreach (var entry in scores)
             {
