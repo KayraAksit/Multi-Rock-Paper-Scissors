@@ -635,6 +635,13 @@ namespace server
                             string leaveMessage = "Player " + nameMovePair[0] + " left the game";
                             BroadCastMessage(leaveMessage);
                         }
+                        
+                        //Player wants to REJOIN game
+                        if (nameMovePair[1] == "rejoingame")
+                        {
+                            var plInf = players.FirstOrDefault(item => item.name == nameMovePair[0]);
+                            plInf.isLeft = false;
+                        }
 
                         //IN GAME LOGIC
                         if (nameMovePair[1] == "Rock" || nameMovePair[1] == "Paper" || nameMovePair[1] == "Scissors")

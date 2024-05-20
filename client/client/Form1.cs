@@ -195,6 +195,22 @@ namespace client
                 Byte[] buffer = Encoding.Default.GetBytes(message);
                 clientSocket.Send(buffer);
             }
+            button_join.Enabled = true;
+            button_leavegame.Enabled = false;
+        }
+
+        private void button_join_Click(object sender, EventArgs e)
+        {
+            string message = textBox_name.Text + " " + "rejoingame";
+
+            if (message != "" && message.Length <= 64)
+            {
+                Byte[] buffer = Encoding.Default.GetBytes(message);
+                clientSocket.Send(buffer);
+            }
+            button_leavegame.Enabled = true;
+            button_join.Enabled = false;
+
         }
     }
 }
