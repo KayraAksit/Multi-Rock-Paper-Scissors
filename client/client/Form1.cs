@@ -190,6 +190,9 @@ namespace client
         {
             string message = textBox_name.Text + " " + "leavegame";
 
+            playerMove.Enabled = false;
+            button_send.Enabled = false;
+
             if (message != "" && message.Length <= 64)
             {
                 Byte[] buffer = Encoding.Default.GetBytes(message);
