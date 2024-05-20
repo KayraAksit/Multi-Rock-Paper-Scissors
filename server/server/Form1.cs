@@ -642,6 +642,27 @@ namespace server
                             string leaveMessage = "Player " + nameMovePair[0] + " left the game";
                             BroadCastMessage(leaveMessage);
                         }
+                        
+                        //Player wants to REJOIN game
+                        if (nameMovePair[1] == "rejoingame")
+                        {
+                            var plInf = players.FirstOrDefault(item => item.name == nameMovePair[0]);
+                            plInf.isLeft = false;
+                            
+                            var inGameCount = players.Count(p => p.isInGame == true);
+                            if(inGameCount + 1 == activeMaxClients && !isSecondRound)
+                            {
+                                foreach (PlayerInfo pInf in players) //Notify players of game start
+                                {
+                                    NotifyClientGameStart(pInf.socket);
+                                }
+
+                                //Test play the game
+                                Thread gameThread = new Thread(new ThreadStart(PlayTheGame));
+                                gameThread.Start();
+                            }
+
+                        }
 
                         //IN GAME LOGIC
                         if (nameMovePair[1] == "Rock" || nameMovePair[1] == "Paper" || nameMovePair[1] == "Scissors")
