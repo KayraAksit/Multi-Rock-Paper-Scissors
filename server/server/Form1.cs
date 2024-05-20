@@ -641,6 +641,20 @@ namespace server
                         {
                             var plInf = players.FirstOrDefault(item => item.name == nameMovePair[0]);
                             plInf.isLeft = false;
+                            
+                            var inGameCount = players.Count(p => p.isInGame == true);
+                            if(inGameCount + 1 == activeMaxClients && !isSecondRound)
+                            {
+                                foreach (PlayerInfo pInf in players) //Notify players of game start
+                                {
+                                    NotifyClientGameStart(pInf.socket);
+                                }
+
+                                //Test play the game
+                                Thread gameThread = new Thread(new ThreadStart(PlayTheGame));
+                                gameThread.Start();
+                            }
+
                         }
 
                         //IN GAME LOGIC
