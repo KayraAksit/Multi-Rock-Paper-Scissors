@@ -40,6 +40,7 @@ namespace client
                     button_connect.Enabled = false;
                     playerMove.Enabled = false;
                     button_send.Enabled = false;
+                    button_leavegame.Enabled = true;
                     connected = true;
                     logs.AppendText("Connected to the server!\n");
 
@@ -71,15 +72,19 @@ namespace client
             {
                 try
                 {
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[10000];
                     int receivedByteCount = clientSocket.Receive(buffer);
                     if (receivedByteCount > 0)
                     {
                         string incomingMessage = Encoding.Default.GetString(buffer).Substring(0, receivedByteCount);
-                        
-                        if (!incomingMessage.StartsWith("LeaderboardUpdate:"))
+
+                        if(!incomingMessage.Contains("LeaderboardUpdate"))
                         {
                             logs.AppendText(incomingMessage + "\n");
+                        }
+                        else
+                        {
+                            logs.AppendText("Leaderboard Updated \n");
                         }
 
                         // When in the queue, ignore other messages
@@ -125,7 +130,6 @@ namespace client
 
             }
         }
-
 
         private void UpdateLeaderboardClient(string leaderboardData)
         {
@@ -180,6 +184,17 @@ namespace client
                 button_send.Enabled = false;
             }
 
+        }
+
+        private void button_leavegame_Click(object sender, EventArgs e)
+        {
+            string message = textBox_name.Text + " " + "leavegame";
+
+            if (message != "" && message.Length <= 64)
+            {
+                Byte[] buffer = Encoding.Default.GetBytes(message);
+                clientSocket.Send(buffer);
+            }
         }
     }
 }
