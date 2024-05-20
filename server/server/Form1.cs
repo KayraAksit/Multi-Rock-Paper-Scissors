@@ -210,7 +210,7 @@ namespace server
         //Second boolean argumant is for not taking anyone from the waiting queue when the second round starts
         private bool StartCountDown(int playerNum, bool isSecondRound)
         {
-            int countdownTime = 15; // 10 seconds
+            int countdownTime = 5; //5 seconds
             while (countdownTime > 0)
             {
                 Thread.Sleep(1000); // wait for 1 second
@@ -284,7 +284,7 @@ namespace server
             }
 
             bool isAllInputTaken = true;
-            int countdownTime = 60; // 10 seconds
+            int countdownTime = 10; // 10 seconds
             while (countdownTime > 0)
             {
                 Thread.Sleep(1000); // wait for 1 second
@@ -641,6 +641,8 @@ namespace server
                         {
                             var plInf = players.FirstOrDefault(item => item.name == nameMovePair[0]);
                             plInf.isLeft = false;
+                            players.Remove(plInf);
+                            players.Add(plInf);
                             
                             var inGameCount = players.Count(p => p.isInGame == true);
                             if(inGameCount + 1 == activeMaxClients && !isSecondRound)
