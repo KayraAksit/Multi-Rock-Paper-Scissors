@@ -192,6 +192,8 @@ namespace client
 
             playerMove.Enabled = false;
             button_send.Enabled = false;
+            button_connect.Enabled = true;
+            button_leavegame.Enabled = false;
 
             if (message != "" && message.Length <= 64)
             {
