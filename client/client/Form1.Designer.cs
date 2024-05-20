@@ -46,41 +46,46 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(39, 82);
+            this.label1.Location = new System.Drawing.Point(26, 53);
+            this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(28, 20);
+            this.label1.Size = new System.Drawing.Size(20, 13);
             this.label1.TabIndex = 0;
             this.label1.Text = "IP:";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(39, 125);
+            this.label2.Location = new System.Drawing.Point(26, 81);
+            this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(42, 20);
+            this.label2.Size = new System.Drawing.Size(29, 13);
             this.label2.TabIndex = 1;
             this.label2.Text = "Port:";
             // 
             // textBox_ip
             // 
-            this.textBox_ip.Location = new System.Drawing.Point(100, 77);
+            this.textBox_ip.Location = new System.Drawing.Point(67, 50);
+            this.textBox_ip.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.textBox_ip.Name = "textBox_ip";
-            this.textBox_ip.Size = new System.Drawing.Size(130, 26);
+            this.textBox_ip.Size = new System.Drawing.Size(88, 20);
             this.textBox_ip.TabIndex = 2;
             // 
             // textBox_port
             // 
-            this.textBox_port.Location = new System.Drawing.Point(100, 123);
+            this.textBox_port.Location = new System.Drawing.Point(67, 80);
+            this.textBox_port.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.textBox_port.Name = "textBox_port";
-            this.textBox_port.Size = new System.Drawing.Size(130, 26);
+            this.textBox_port.Size = new System.Drawing.Size(88, 20);
             this.textBox_port.TabIndex = 3;
             this.textBox_port.Text = "3131";
             // 
             // button_connect
             // 
-            this.button_connect.Location = new System.Drawing.Point(100, 228);
+            this.button_connect.Location = new System.Drawing.Point(67, 148);
+            this.button_connect.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.button_connect.Name = "button_connect";
-            this.button_connect.Size = new System.Drawing.Size(104, 34);
+            this.button_connect.Size = new System.Drawing.Size(69, 22);
             this.button_connect.TabIndex = 4;
             this.button_connect.Text = "connect";
             this.button_connect.UseVisualStyleBackColor = true;
@@ -88,18 +93,20 @@
             // 
             // logs
             // 
-            this.logs.Location = new System.Drawing.Point(406, 80);
+            this.logs.Location = new System.Drawing.Point(271, 52);
+            this.logs.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.logs.Name = "logs";
-            this.logs.Size = new System.Drawing.Size(244, 399);
+            this.logs.Size = new System.Drawing.Size(164, 261);
             this.logs.TabIndex = 5;
             this.logs.Text = "";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 417);
+            this.label3.Location = new System.Drawing.Point(9, 272);
+            this.label3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(119, 20);
+            this.label3.Size = new System.Drawing.Size(82, 13);
             this.label3.TabIndex = 7;
             this.label3.Text = "Choose a Move";
             this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -107,9 +114,10 @@
             // button_send
             // 
             this.button_send.Enabled = false;
-            this.button_send.Location = new System.Drawing.Point(285, 414);
+            this.button_send.Location = new System.Drawing.Point(190, 269);
+            this.button_send.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.button_send.Name = "button_send";
-            this.button_send.Size = new System.Drawing.Size(98, 40);
+            this.button_send.Size = new System.Drawing.Size(65, 26);
             this.button_send.TabIndex = 8;
             this.button_send.Text = "send";
             this.button_send.UseVisualStyleBackColor = true;
@@ -117,18 +125,20 @@
             // 
             // textBox_name
             // 
-            this.textBox_name.Location = new System.Drawing.Point(100, 175);
+            this.textBox_name.Location = new System.Drawing.Point(67, 114);
+            this.textBox_name.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.textBox_name.Name = "textBox_name";
-            this.textBox_name.Size = new System.Drawing.Size(130, 26);
+            this.textBox_name.Size = new System.Drawing.Size(88, 20);
             this.textBox_name.TabIndex = 9;
             this.textBox_name.Text = "player";
             // 
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(39, 177);
+            this.label4.Location = new System.Drawing.Point(26, 115);
+            this.label4.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(55, 20);
+            this.label4.Size = new System.Drawing.Size(38, 13);
             this.label4.TabIndex = 10;
             this.label4.Text = "Name:";
             // 
@@ -140,30 +150,28 @@
             "Rock",
             "Paper",
             "Scissors"});
-
-            this.playerMove.Location = new System.Drawing.Point(96, 269);
-            this.playerMove.Margin = new System.Windows.Forms.Padding(2);
-
+            this.playerMove.Location = new System.Drawing.Point(94, 269);
+            this.playerMove.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
             this.playerMove.Name = "playerMove";
-            this.playerMove.Size = new System.Drawing.Size(121, 28);
+            this.playerMove.Size = new System.Drawing.Size(82, 21);
             this.playerMove.TabIndex = 11;
             // 
             // leaderboard
             // 
             this.leaderboard.FormattingEnabled = true;
-
-            this.leaderboard.Location = new System.Drawing.Point(453, 57);
+            this.leaderboard.Location = new System.Drawing.Point(452, 49);
+            this.leaderboard.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.leaderboard.Name = "leaderboard";
-            this.leaderboard.Size = new System.Drawing.Size(281, 238);
-
+            this.leaderboard.Size = new System.Drawing.Size(254, 264);
             this.leaderboard.TabIndex = 12;
             // 
             // button_leavegame
             // 
             this.button_leavegame.Enabled = false;
-            this.button_leavegame.Location = new System.Drawing.Point(100, 295);
+            this.button_leavegame.Location = new System.Drawing.Point(67, 192);
+            this.button_leavegame.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.button_leavegame.Name = "button_leavegame";
-            this.button_leavegame.Size = new System.Drawing.Size(165, 34);
+            this.button_leavegame.Size = new System.Drawing.Size(69, 40);
             this.button_leavegame.TabIndex = 13;
             this.button_leavegame.Text = "Leave Game";
             this.button_leavegame.UseVisualStyleBackColor = true;
@@ -171,12 +179,10 @@
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-
-            this.ClientSize = new System.Drawing.Size(755, 358);
+            this.ClientSize = new System.Drawing.Size(717, 330);
             this.Controls.Add(this.button_leavegame);
-
             this.Controls.Add(this.leaderboard);
             this.Controls.Add(this.playerMove);
             this.Controls.Add(this.label4);
@@ -189,6 +195,7 @@
             this.Controls.Add(this.textBox_ip);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
+            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Name = "Form1";
             this.Text = "Form1";
             this.ResumeLayout(false);

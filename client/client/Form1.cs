@@ -156,7 +156,7 @@ namespace client
             // Add sorted player details to the leaderboard
             foreach (string[] details in playerDetails)
             {
-                leaderboard.Items.Add($"Player: {details[0]}, Wins: {details[1]}, Losses: {details[2]}, Played: {details[3]}");
+                leaderboard.Items.Add($"Player: {details[0]}, Wins: {details[1]}, Losses: {details[2]}, Played: {details[3]}\n");
             }
         }
 

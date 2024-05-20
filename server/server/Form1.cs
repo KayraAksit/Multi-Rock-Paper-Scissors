@@ -539,7 +539,7 @@ namespace server
         // Add this method in the server's Form1 class
         private void BroadcastLeaderboard(Dictionary<string, PlayerStatistics> playerStats)
         {
-            string leaderboardString = "LeaderboardUpdate:" + string.Join("\n", playerStats.Select(x => $"{x.Key}:{x.Value.winCount}:{x.Value.lossCount}:{x.Value.totalGamesPlayed}"));
+            string leaderboardString = "LeaderboardUpdate:" + string.Join(",", playerStats.Select(x => $"{x.Key}:{x.Value.winCount}:{x.Value.lossCount}:{x.Value.totalGamesPlayed}"));
             byte[] buffer = Encoding.Default.GetBytes(leaderboardString);
             foreach (PlayerInfo player in players)
             {
