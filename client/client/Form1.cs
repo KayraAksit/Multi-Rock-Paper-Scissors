@@ -78,6 +78,7 @@ namespace client
                     {
                         string incomingMessage = Encoding.Default.GetString(buffer).Substring(0, receivedByteCount);
 
+                        // A change has happened in the leaderboard. This if check is only for message displays on the log
                         if(!incomingMessage.Contains("LeaderboardUpdate"))
                         {
                             logs.AppendText(incomingMessage + "\n");
@@ -88,23 +89,22 @@ namespace client
                         }
 
                         // When in the queue, ignore other messages
-                        if (incomingMessage.Contains("waiting queue"))
+                        if (incomingMessage.Contains("waiting queue")) // client is put in the queue
                         {
                             playerMove.Enabled = false;
                             button_send.Enabled = false;
                         }
-                        if (incomingMessage.Contains("your move you have"))
+                        if (incomingMessage.Contains("your move you have")) // client made a move
                         {
                             playerMove.Enabled = true;
                             button_send.Enabled = true;
                         }
-                        if (incomingMessage.Contains("The next round is starting"))
+                        if (incomingMessage.Contains("The next round is starting")) // client is ascending to next round
                         {
                             playerMove.Enabled = false;
                             button_send.Enabled = false;
                         }
-                        // Handling leaderboard updates
-                        if (incomingMessage.StartsWith("LeaderboardUpdate:"))
+                        if (incomingMessage.StartsWith("LeaderboardUpdate:")) // Handling leaderboard updates
                         {
                             UpdateLeaderboardClient(incomingMessage.Replace("LeaderboardUpdate:", ""));
                         }
@@ -131,6 +131,7 @@ namespace client
             }
         }
 
+        // Gets the leaderboard from serverside, updates leaderboard on this client
         private void UpdateLeaderboardClient(string leaderboardData)
         {
             leaderboard.Items.Clear();
@@ -147,7 +148,6 @@ namespace client
             {
                 string[] details = player.Split(':');
                 playerDetails.Add(details);
-                //logs.AppendText($"{details[0]}=> W/L/P: {details[1]}/{details[2]}/{details[3]}\n");
             }
 
             // Sort the player details list based on the score in descending order
@@ -186,6 +186,7 @@ namespace client
 
         }
 
+        // Player decided to DISCONNECT
         private void button_leavegame_Click(object sender, EventArgs e)
         {
             string message = textBox_name.Text + " " + "leavegame";
