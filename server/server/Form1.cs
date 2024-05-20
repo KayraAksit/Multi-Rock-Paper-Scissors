@@ -308,7 +308,23 @@ namespace server
                     {
                         pInf.socket.Send(winBuffer);
                     }
-                    return;
+                    //One player won, restart the game if enough players left
+                    isSecondRound = false;
+                    activeMaxClients = maxClients;
+                    int currentPlayer = players.Count;
+                    if (currentPlayer >= maxClients)
+                    {
+                        foreach (PlayerInfo pInf in players)
+                        {
+                            pInf.isInputTaken = false;
+                            pInf.move = "";
+                            pInf.isInGame = false;
+                            pInf.inGameScore = 0;
+                        }
+                        //Test play the game              
+                        PlayTheGame();
+                    }
+                    //return;
                 }
                 
                 isAllInputTaken = true;
@@ -419,8 +435,7 @@ namespace server
                         pInf.inGameScore = 0;
                     }
                     //Test play the game
-                    Thread gameThread = new Thread(new ThreadStart(PlayTheGame));
-                    gameThread.Start();
+                    PlayTheGame();
                 }
             }
             else
