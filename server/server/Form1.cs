@@ -21,14 +21,13 @@ namespace server
     public partial class Form1 : Form
     {
         #region VARIABLES
-        //Initialize the dictionary to store player names
-        List<PlayerInfo> players = new List<PlayerInfo>();
+        
+        Socket serverSocket;
+        List<PlayerInfo> players = new List<PlayerInfo>(); //Initialize the dictionary to store player names
+        Dictionary<string, PlayerStatistics> playerStats; // keeps game statistics (value) related to the given username (key)
 
         const int maxClients = 4; //Define max number of players playing simultaneously
         int activeMaxClients = maxClients; //Define max number of players playing simultaneously in the current round
-
-        Socket serverSocket;
-        Dictionary<string, PlayerStatistics> playerStats;
 
         bool isSecondRound = false;
         bool terminating = false;
@@ -42,6 +41,7 @@ namespace server
             this.FormClosing += new FormClosingEventHandler(Form1_FormClosing);
             InitializeComponent();
 
+            // Initialize the client socket, and prepare leaderboard
             serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             playerStats = ReadWinCountsFromFile();
             UpdateLeaderboard(playerStats);
@@ -89,7 +89,7 @@ namespace server
                     string username = Encoding.Default.GetString(buffer, 0, received);
 
                     // Check if the username is already taken
-                    if(players.Any(item => item.name == username))
+                    if ( players.Any(item => item.name == username) )
                     {
                         // Notify the client that the username is already taken, ask for trying with a new one and disconnect the client
                         string usernameTakenMsg = "Username is already taken. Please try with a new one.\n";
@@ -97,14 +97,14 @@ namespace server
                         newClient.Send(usernameTakenBuffer);
                         newClient.Close();
                     }
-                    else
+                    else // If the username is not taken
                     {
-                        Thread receiveThread = new Thread(() => MyReceive(newClient));
+                        Thread receiveThread = new Thread(() => MyReceive(newClient)); // accept player
                         receiveThread.Start();
 
                         PlayerStatistics playerStatistics = ReadWinCountsFromFile().TryGetValue(username, out playerStatistics) ? playerStatistics : new PlayerStatistics(0, 0, 0);
                         PlayerInfo newPlayer = new PlayerInfo(username, newClient, playerStatistics);
-                        SendLeaderboard(playerStats, newPlayer);
+                        SendLeaderboard(playerStats, newPlayer); // send leaderboard to specific client (newPlayer)
 
 
                         // Check if the game has enough players
@@ -171,6 +171,8 @@ namespace server
                 pInf.socket.Send(messageBuffer);
             }
         }
+
+        // Inform players that the game there are enough players and the game will start soon
         private void NotifyClientGameStart(Socket client)
         {
             string gameStartMsg = "The game will start in shortly!\n";
@@ -178,6 +180,7 @@ namespace server
             client.Send(gameStartBuffer);
         }
 
+        // Inform players that a new player has joined the game
         private void NotifyPlayerEnteredGame(string username)
         {
             string plEnteredMsg = username + " has entered the game!\n";
@@ -191,6 +194,7 @@ namespace server
             }
         }
 
+        // Inform players that the game cannot start due to not enough player number
         private void NotifyClientNotEnoughPlayers(Socket client)
         {
             string gameStartMsg = "Not Enough Players to start the game, waiting for more players\n";
@@ -198,6 +202,7 @@ namespace server
             client.Send(gameStartBuffer);
         }
 
+        // Inform a player that (s)he is in the queue
         private void NotifyClientQueueStatus(Socket client)
         {
             string queueMsg = "You are in the waiting queue...\n";
@@ -476,7 +481,8 @@ namespace server
         #endregion
 
         #region LEADERBOARD FUNCTIONS
-        // Helper method to read win counts from file
+
+        // Helper method to read win counts from txt file
         private Dictionary<string, PlayerStatistics> ReadWinCountsFromFile()
         {
             Dictionary<string, PlayerStatistics> playerStats = new Dictionary<string, PlayerStatistics>();
@@ -503,7 +509,7 @@ namespace server
             return playerStats;
         }
 
-        // Helper method to write win counts to file
+        // Helper method to write win counts to txt file
         private void WriteWinCountsToFile(Dictionary<string, PlayerStatistics> playerStats)
         {
             List<string> lines = new List<string>();
@@ -564,7 +570,7 @@ namespace server
             }
         }
 
-        // Add this method in the server's Form1 class
+        // Add this method in the server's Form1 class to display leaderboard at start
         private void BroadcastLeaderboard(Dictionary<string, PlayerStatistics> playerStats)
         {
             string leaderboardString = "LeaderboardUpdate:" + string.Join(",", playerStats.Select(x => $"{x.Key}:{x.Value.winCount}:{x.Value.lossCount}:{x.Value.totalGamesPlayed}"));
@@ -576,11 +582,11 @@ namespace server
                     player.socket.Send(buffer);
                 }
                 catch
-                {
-                    // Optional: handle errors, e.g., log this event or remove the player from the list.
-                }
+                { }
             }
         }
+
+        // Sends leaderboard to clientside as a message
         private void SendLeaderboard(Dictionary<string, PlayerStatistics> playerStats, PlayerInfo target_player)
         {
             string leaderboardString = "LeaderboardUpdate:" + string.Join(",", playerStats.Select(x => $"{x.Key}:{x.Value.winCount}:{x.Value.lossCount}:{x.Value.totalGamesPlayed}"));
@@ -602,12 +608,13 @@ namespace server
         #endregion
 
         #region MAIN FLOW
+
         // Main thread for activating clients
         private void MyReceive(Socket thisClient)
         {
             bool connected = true;
 
-            while (connected && !terminating)
+            while (connected && !terminating) 
             {
                 try
                 {
@@ -718,7 +725,8 @@ namespace server
         }
         #endregion
 
-        #region WHATEVER
+        #region SEND SERVER MESSAGE & JUNK
+
         // If server sends message
         private void button_send_Click(object sender, EventArgs e)
         {
@@ -762,6 +770,7 @@ namespace server
     }
 }
 
+// Actual class for players
 public class PlayerInfo
 {
     public string name;
@@ -787,6 +796,7 @@ public class PlayerInfo
 
 }
 
+// Class for keeping win, lose, and game counts; used in PlayerInfo class
 public class PlayerStatistics
 {
     public int winCount;
